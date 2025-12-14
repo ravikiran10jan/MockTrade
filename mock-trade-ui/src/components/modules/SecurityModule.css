@@ -1,0 +1,417 @@
+/* Security Module Styles */
+
+.security-module {
+  padding: 20px;
+  background: #f3f4f6;
+  min-height: 100vh;
+}
+
+.security-header {
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.security-header h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1f2933;
+  margin: 0 0 8px 0;
+}
+
+.security-header p {
+  color: #4b5563;
+  font-size: 14px;
+  margin: 0;
+}
+
+/* Alerts */
+.alert {
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+}
+
+.alert-error {
+  background: #fee;
+  color: #c33;
+  border: 1px solid #fcc;
+}
+
+.alert-success {
+  background: #efe;
+  color: #3c3;
+  border: 1px solid #cfc;
+}
+
+.alert button {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: inherit;
+}
+
+/* Tabs */
+.tabs-container {
+  margin-bottom: 30px;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 2px solid #e5e7eb;
+  flex-wrap: wrap;
+}
+
+.tab {
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #4b5563;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: -2px;
+}
+
+.tab:hover {
+  color: #1f2933;
+}
+
+.tab.active {
+  color: #1d4ed8;
+  border-bottom-color: #1d4ed8;
+}
+
+/* Loading State */
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #4b5563;
+  font-size: 16px;
+}
+
+/* Tab Content */
+.tab-content {
+  animation: fadeIn 0.2s;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Sections */
+.form-section,
+.list-section {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 24px;
+  border: 1px solid #e5e7eb;
+}
+
+.form-section h2,
+.list-section h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2933;
+  margin: 0 0 20px 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* Forms */
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #1f2933;
+  margin-bottom: 6px;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e0;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #1f2933;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #1d4ed8;
+  box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.1);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 1024px) {
+  .form-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Buttons */
+.btn {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.btn-primary {
+  background: #1d4ed8;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #1e40af;
+}
+
+.btn-primary:active {
+  background: #1e3a8a;
+}
+
+.btn-secondary {
+  background: #f3f4f6;
+  color: #1f2933;
+  border: 1px solid #cbd5e0;
+}
+
+.btn-secondary:hover {
+  background: #e5e7eb;
+}
+
+.btn-danger {
+  background: #dc2626;
+  color: white;
+}
+
+.btn-danger:hover {
+  background: #b91c1c;
+}
+
+.btn-small {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+/* Tables */
+.data-table,
+.permissions-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.data-table thead,
+.permissions-table thead {
+  background: #f9fafb;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.data-table th,
+.permissions-table th {
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #1f2933;
+}
+
+.data-table td,
+.permissions-table td {
+  padding: 12px;
+  border-bottom: 1px solid #e5e7eb;
+  color: #4b5563;
+}
+
+.data-table tbody tr:hover,
+.permissions-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+.data-table tbody tr:last-child td,
+.permissions-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Role and Trader Names */
+.role-name,
+.module-name,
+.permission-name,
+.user-name {
+  font-weight: 500;
+  color: #1f2933;
+}
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.badge-active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.badge-inactive {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.permission-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.permission-badge.read {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.permission-badge.read_write {
+  background: #fed7aa;
+  color: #92400e;
+}
+
+/* Empty State */
+.empty-state {
+  padding: 40px 20px;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+/* User Permissions Summary */
+.user-permissions-summary {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.user-permissions-summary h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2933;
+  margin: 0 0 16px 0;
+}
+
+.role-section {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 6px;
+  border-left: 3px solid #1d4ed8;
+}
+
+.role-section h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2933;
+  margin: 0 0 12px 0;
+}
+
+.role-section .permissions-table {
+  margin-top: 12px;
+}
+
+.role-section .permissions-table thead {
+  background: white;
+}
+
+.role-section .permissions-table th {
+  font-size: 12px;
+  padding: 8px;
+}
+
+.role-section .permissions-table td {
+  padding: 8px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .security-module {
+    padding: 12px;
+  }
+
+  .form-section,
+  .list-section {
+    padding: 16px;
+  }
+
+  .data-table,
+  .permissions-table {
+    font-size: 12px;
+  }
+
+  .data-table th,
+  .data-table td,
+  .permissions-table th,
+  .permissions-table td {
+    padding: 8px;
+  }
+
+  .tabs {
+    gap: 4px;
+  }
+
+  .tab {
+    padding: 10px 12px;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+

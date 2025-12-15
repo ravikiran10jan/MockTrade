@@ -2,7 +2,10 @@
 
 from enum import Enum
 from pydantic import BaseSettings
+from dotenv import load_dotenv
 import os
+
+load_dotenv()
 
 class Settings(BaseSettings):
     """Application settings"""
@@ -12,7 +15,7 @@ class Settings(BaseSettings):
     api_version: str = "v1"
 
     class Config:
-        env_file = ".env"
+        env_file = None
 
 settings = Settings()
 

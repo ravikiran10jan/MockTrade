@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './SecurityModule.css';
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_BASE || '';
 
 const SecurityModule = () => {
   const [activeTab, setActiveTab] = useState('roles');
@@ -766,5 +766,4 @@ const SecurityModule = () => {
 };
 
 export default SecurityModule;
-
 

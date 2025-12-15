@@ -234,16 +234,16 @@ function TradingDashboard() {
             API Docs
           </p>
           <p style={{ margin: 0 }}>
-            <a href="http://localhost:8000/docs" target="_blank" rel="noopener noreferrer" style={{
-              color: "#1d4ed8",
-              textDecoration: "none",
-              fontWeight: "500"
-            }}>
-              localhost:8000/docs
-            </a>
-          </p>
-        </div>
-      </div>
+            <a href={`${import.meta.env.VITE_API_BASE || ''}/docs`} target="_blank" rel="noopener noreferrer" style={{
+               color: "#1d4ed8",
+               textDecoration: "none",
+               fontWeight: "500"
+             }}>
+              API Docs
+             </a>
+           </p>
+         </div>
+       </div>
 
       {/* Main Content */}
       <div style={{

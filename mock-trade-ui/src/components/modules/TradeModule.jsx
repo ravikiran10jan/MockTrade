@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 
-const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
+// Prefer an explicit VITE_API_BASE; fall back to empty string so dev proxy forwards relative /api calls
+const API_BASE = import.meta.env.VITE_API_BASE || "";
 const FONT_FAMILY = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
 
 function TradeModule() {
@@ -46,8 +47,19 @@ function TradeModule() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || `Failed to cancel trade (HTTP ${response.status})`);
+        let errorDetail = `HTTP ${response.status}`;
+        try {
+          const responseText = await response.text();
+          try {
+            const errorData = JSON.parse(responseText);
+            errorDetail = errorData.detail || errorData.message || responseText;
+          } catch (jsonError) {
+            errorDetail = responseText || errorDetail;
+          }
+        } catch (textError) {
+          errorDetail = `HTTP ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorDetail);
       }
 
       setMessage("Trade cancelled successfully");
@@ -73,8 +85,19 @@ function TradeModule() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || `Failed to expire trade (HTTP ${response.status})`);
+        let errorDetail = `HTTP ${response.status}`;
+        try {
+          const responseText = await response.text();
+          try {
+            const errorData = JSON.parse(responseText);
+            errorDetail = errorData.detail || errorData.message || responseText;
+          } catch (jsonError) {
+            errorDetail = responseText || errorDetail;
+          }
+        } catch (textError) {
+          errorDetail = `HTTP ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorDetail);
       }
 
       setMessage("Trade expired successfully");

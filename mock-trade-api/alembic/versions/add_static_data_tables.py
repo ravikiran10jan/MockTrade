@@ -4,6 +4,12 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import sqlite
 
+# revision identifiers, used by Alembic.
+revision = 'add_static_data_tables'
+down_revision = 'add_core_static_tables'
+branch_labels = None
+depends_on = None
+
 # This migration creates or updates all core static data tables
 
 def upgrade() -> None:
@@ -14,6 +20,7 @@ def upgrade() -> None:
         sa.Column('user_id', sa.String(), nullable=True),
         sa.Column('name', sa.String(), nullable=True),
         sa.Column('desk', sa.String(), nullable=True),
+        sa.Column('status', sa.String(), nullable=True, server_default='ACTIVE'),
         sa.PrimaryKeyConstraint('trader_id'),
     )
     op.create_index(op.f('ix_trader_trader_id'), 'trader', ['trader_id'], unique=False)
@@ -61,4 +68,3 @@ def downgrade() -> None:
     op.drop_table('broker')
     op.drop_index(op.f('ix_trader_trader_id'), table_name='trader')
     op.drop_table('trader')
-

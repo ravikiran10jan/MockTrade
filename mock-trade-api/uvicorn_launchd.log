@@ -1,0 +1,81 @@
+INFO:     127.0.0.1:50361 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50407 - "POST /api/v1/static-data/instruments HTTP/1.1" 500 Internal Server Error
+=== Starting MockTrade API - Mon Dec 15 09:07:48 IST 2025 ===
+Working dir: /Users/ravikiranreddygajula/MockTrade/mock-trade-api
+Python: Python 3.9.6
+INFO:     127.0.0.1:50553 - "GET /health HTTP/1.1" 200 OK
+=== Starting MockTrade API - Mon Dec 15 09:08:05 IST 2025 ===
+Working dir: /Users/ravikiranreddygajula/MockTrade/mock-trade-api
+Python: Python 3.9.6
+INFO:     127.0.0.1:50625 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50667 - "POST /api/v1/static-data/instruments HTTP/1.1" 500 Internal Server Error
+=== Starting MockTrade API - Mon Dec 15 09:08:55 IST 2025 ===
+Working dir: /Users/ravikiranreddygajula/MockTrade/mock-trade-api
+Python: Python 3.9.6
+=== Starting MockTrade API - Mon Dec 15 09:09:07 IST 2025 ===
+Working dir: /Users/ravikiranreddygajula/MockTrade/mock-trade-api
+Python: Python 3.9.6
+=== Starting MockTrade API - Mon Dec 15 09:09:24 IST 2025 ===
+Working dir: /Users/ravikiranreddygajula/MockTrade/mock-trade-api
+Python: Python 3.9.6
+=== Starting MockTrade API - Mon Dec 15 09:10:10 IST 2025 ===
+Working dir: /Users/ravikiranreddygajula/MockTrade/mock-trade-api
+Python: Python 3.9.6
+DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mocktrade
+INFO:     127.0.0.1:50965 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50993 - "POST /api/v1/static-data/instruments HTTP/1.1" 500 Internal Server Error
+=== Starting MockTrade API - Mon Dec 15 09:11:14 IST 2025 ===
+Working dir: /Users/ravikiranreddygajula/MockTrade/mock-trade-api
+Python: Python 3.9.6
+DATABASE_URL: postgresql://ravikiranreddygajula@localhost:5432/mocktrade
+INFO:     127.0.0.1:51082 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51103 - "POST /api/v1/static-data/instruments HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:51329 - "POST /api/v1/static-data/instruments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51365 - "GET /api/v1/static-data/instruments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51373 - "GET /api/v1/static-data/instruments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51368 - "GET /order/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51366 - "GET /api/v1/static-data/accounts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51367 - "GET /api/v1/static-data/traders HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51377 - "GET /order/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51379 - "GET /api/v1/static-data/accounts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51382 - "GET /api/v1/static-data/traders HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51386 - "GET /api/v1/static-data/instruments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51389 - "GET /api/v1/static-data/instruments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51491 - "POST /api/v1/static-data/instruments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51494 - "GET /api/v1/static-data/instruments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51501 - "GET /api/v1/static-data/instruments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51506 - "GET /order/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51504 - "GET /api/v1/static-data/traders HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51505 - "GET /api/v1/static-data/accounts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51511 - "GET /api/v1/static-data/instruments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51512 - "GET /order/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51516 - "GET /api/v1/static-data/accounts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51518 - "GET /api/v1/static-data/traders HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51525 - "GET /api/v1/static-data/instruments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51528 - "GET /api/v1/static-data/instruments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51531 - "GET /api/v1/static-data/traders HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51536 - "POST /api/v1/static-data/traders HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51539 - "GET /api/v1/static-data/traders HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51551 - "GET /order/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51549 - "GET /api/v1/static-data/traders HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51545 - "GET /api/v1/static-data/instruments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51550 - "GET /api/v1/static-data/accounts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51555 - "GET /order/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51560 - "GET /api/v1/static-data/instruments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51561 - "GET /api/v1/static-data/traders HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51563 - "GET /api/v1/static-data/accounts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51571 - "GET /api/v1/static-data/instruments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51574 - "GET /api/v1/static-data/instruments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51582 - "GET /api/v1/static-data/accounts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51585 - "POST /api/v1/static-data/accounts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51588 - "GET /api/v1/static-data/accounts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51599 - "GET /api/v1/static-data/accounts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51595 - "GET /api/v1/static-data/instruments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51598 - "GET /api/v1/static-data/traders HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51600 - "GET /order/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51611 - "GET /order/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51606 - "GET /api/v1/static-data/instruments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51605 - "GET /api/v1/static-data/accounts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51612 - "GET /api/v1/static-data/traders HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51620 - "POST /order/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51623 - "GET /order/ HTTP/1.1" 200 OK

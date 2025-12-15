@@ -1,5 +1,12 @@
-import React, { useState, useEffect } from "react";
-import "./BloombergTheme.css";
+import React, { useEffect, useState } from "react";
+
+const API_BASE = import.meta.env.VITE_API_BASE || '';
+const FONT_FAMILY = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
+const TABLE_HEADER_STYLE = {
+  padding: "10px",
+  textAlign: "left",
+  borderBottom: "1px solid #0ff"
+};
 
 function TradeBooking() {
   const [trades, setTrades] = useState([]);
@@ -14,7 +21,7 @@ function TradeBooking() {
   const fetchTrades = async () => {
     try {
       setLoading(true);
-      const response = await fetch("http://localhost:8000/api/v1/trades/");
+      const response = await fetch(`${API_BASE}/api/v1/trades/`);
       if (!response.ok) throw new Error("Failed to fetch trades");
       const data = await response.json();
       setTrades(data);
@@ -27,7 +34,7 @@ function TradeBooking() {
 
   const handleCancelTrade = async (tradeId) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/v1/trades/${tradeId}/cancel`, {
+      const response = await fetch(`${API_BASE}/api/v1/trades/${tradeId}/cancel`, {
         method: "POST",
       });
       if (!response.ok) throw new Error("Failed to cancel trade");
@@ -40,7 +47,7 @@ function TradeBooking() {
 
   const handleExpireTrade = async (tradeId) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/v1/trades/${tradeId}/expire`, {
+      const response = await fetch(`${API_BASE}/api/v1/trades/${tradeId}/expire`, {
         method: "POST",
       });
       if (!response.ok) throw new Error("Failed to expire trade");
@@ -67,13 +74,13 @@ function TradeBooking() {
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ backgroundColor: "#333", color: "#0ff" }}>
-              <th style={{ padding: "10px", textAlign: "left", borderBottom: "1px solid #0ff" }}>Trade ID</th>
-              <th style={{ padding: "10px", textAlign: "left", borderBottom: "1px solid #0ff" }}>Instrument</th>
-              <th style={{ padding: "10px", textAlign: "left", borderBottom: "1px solid #0ff" }}>Side</th>
-              <th style={{ padding: "10px", textAlign: "left", borderBottom: "1px solid #0ff" }}>Qty</th>
-              <th style={{ padding: "10px", textAlign: "left", borderBottom: "1px solid #0ff" }}>Price</th>
-              <th style={{ padding: "10px", textAlign: "left", borderBottom: "1px solid #0ff" }}>Status</th>
-              <th style={{ padding: "10px", textAlign: "left", borderBottom: "1px solid #0ff" }}>Actions</th>
+              <th style={TABLE_HEADER_STYLE}>Trade ID</th>
+              <th style={TABLE_HEADER_STYLE}>Instrument</th>
+              <th style={TABLE_HEADER_STYLE}>Side</th>
+              <th style={TABLE_HEADER_STYLE}>Qty</th>
+              <th style={TABLE_HEADER_STYLE}>Price</th>
+              <th style={TABLE_HEADER_STYLE}>Status</th>
+              <th style={TABLE_HEADER_STYLE}>Actions</th>
             </tr>
           </thead>
           <tbody>

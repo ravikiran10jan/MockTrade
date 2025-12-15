@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import "./BloombergTheme.css";
 
-// Add API base (prefer env var, fall back to IPv4 127.0.0.1)
-const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
+// Prefer an explicit VITE_API_BASE; fall back to empty string so dev proxy forwards relative /api calls
+const API_BASE = import.meta.env.VITE_API_BASE || "";
 
 const FONT_FAMILY = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
 
@@ -38,10 +38,11 @@ function OrderEntry({ onSelectOrder }) {
   // Dynamic instruments list from API
   const [instruments, setInstruments] = useState([]);
   const [traders, setTraders] = useState([]);
+  const [accounts, setAccounts] = useState([]);
 
   // sample lists (could come from API later)
   // const instruments = ["ES", "NQ", "AAPL", "GOOGL", "BZ"]; // dropdown
-  const accounts = ["ACC001", "ACC002", "ACC003"];
+  // const accounts = ["ACC001", "ACC002", "ACC003"];
   const orderTypes = ["MARKET", "LIMIT", "STOP", "STOP_LIMIT", "IOC", "FOK"];
   const tifOptions = ["DAY", "GTC", "IOC", "FOK", "GTD"];
   const rejectReasons = ["Test Mode", "Circuit Breaker", "Manual Rejection"];
@@ -60,9 +61,8 @@ function OrderEntry({ onSelectOrder }) {
         throw new Error(`Failed to fetch instruments: HTTP ${response.status}`);
       }
       const data = await response.json();
-      // Extract symbols from the instrument objects
-      const symbols = Array.isArray(data) ? data.map((inst) => inst.symbol).filter(Boolean) : [];
-      setInstruments(symbols);
+      // Store full instrument objects
+      setInstruments(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error fetching instruments:", error);
       // Fallback to empty array - user will need to set up instruments in Static Data first
@@ -93,18 +93,33 @@ function OrderEntry({ onSelectOrder }) {
         throw new Error(`Failed to fetch traders: HTTP ${response.status}`);
       }
       const data = await response.json();
-      // Extract trader user_ids from the trader objects
-      const traderIds = Array.isArray(data) ? data.map((t) => t.user_id).filter(Boolean) : [];
-      setTraders(traderIds);
+      // Store full trader objects
+      setTraders(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error fetching traders:", error);
       setTraders([]);
     }
   };
 
+  const fetchAccounts = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/api/v1/static-data/accounts`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch accounts: HTTP ${response.status}`);
+      }
+      const data = await response.json();
+      // Store full account objects
+      setAccounts(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Error fetching accounts:", error);
+      setAccounts([]);
+    }
+  };
+
   useEffect(() => {
     fetchInstruments();
     fetchTraders();
+    fetchAccounts();
     fetchOrders();
   }, []);
 
@@ -170,8 +185,8 @@ function OrderEntry({ onSelectOrder }) {
     const orderData = {
       instrument,
       side,
-      orderQty: Number(qty),
-      orderType: type,
+      qty: Number(qty),
+      type: type,
       price: price === "" ? null : Number(price),
       stopPrice: stopPrice === "" ? null : Number(stopPrice),
       account,
@@ -201,11 +216,15 @@ function OrderEntry({ onSelectOrder }) {
       if (!response.ok) {
         let errorDetail = `HTTP ${response.status}`;
         try {
-          const errorData = await response.json();
-          errorDetail = errorData.detail || errorData.message || JSON.stringify(errorData);
-        } catch (e) {
-          const textError = await response.text();
-          errorDetail = textError || errorDetail;
+          const responseText = await response.text();
+          try {
+            const errorData = JSON.parse(responseText);
+            errorDetail = errorData.detail || errorData.message || responseText;
+          } catch (jsonError) {
+            errorDetail = responseText || errorDetail;
+          }
+        } catch (textError) {
+          errorDetail = `HTTP ${response.status}: ${response.statusText}`;
         }
         throw new Error(errorDetail);
       }
@@ -218,7 +237,7 @@ function OrderEntry({ onSelectOrder }) {
       setTimeout(() => setMessage(""), 3000);
     } catch (error) {
       if (error.message.includes("Failed to fetch")) {
-        setMessage("Error: Cannot reach API server at localhost:8000. Is the backend running?");
+        setMessage(`Error: Cannot reach API server at ${API_BASE || 'backend API'}. Is it running?`);
       } else {
         setMessage(`Error: ${error.message}`);
       }
@@ -353,7 +372,11 @@ function OrderEntry({ onSelectOrder }) {
                 }}
               >
                 <option value="">Select instrument...</option>
-                {instruments.map((ins) => <option key={ins} value={ins}>{ins}</option>)}
+                {instruments.map((inst) => (
+                  <option key={inst.instrument_id} value={inst.instrument_id}>
+                    {inst.symbol}
+                  </option>
+                ))}
                 <option value="OTHER">Other (enter below)</option>
               </select>
               {instrument === "OTHER" && (
@@ -484,7 +507,11 @@ function OrderEntry({ onSelectOrder }) {
               </label>
               <select value={trader} onChange={(e) => setTrader(e.target.value)} style={{ width: "100%", padding: "8px 10px", border: "1px solid #d1d5db", borderRadius: "4px", fontSize: "12px", backgroundColor: "#fff", boxSizing: "border-box", fontFamily: FONT_FAMILY }}>
                 <option value="">Select trader...</option>
-                {traders.map((t) => <option key={t} value={t}>{t}</option>)}
+                {traders.map((t) => (
+                  <option key={t.trader_id} value={t.trader_id}>
+                    {t.user_id}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -503,7 +530,11 @@ function OrderEntry({ onSelectOrder }) {
               </label>
               <select value={account} onChange={(e) => setAccount(e.target.value)} style={{ width: "100%", padding: "8px 10px", border: "1px solid #d1d5db", borderRadius: "4px", fontFamily: FONT_FAMILY }}>
                 <option value="">Select account...</option>
-                {accounts.map((a) => <option key={a} value={a}>{a}</option>)}
+                {accounts.map((a) => (
+                  <option key={a.account_id} value={a.account_id}>
+                    {a.code}
+                  </option>
+                ))}
               </select>
             </div>
           </div>

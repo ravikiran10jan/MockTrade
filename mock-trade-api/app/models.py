@@ -147,6 +147,8 @@ class Account(Base):
     code = Column(String)
     name = Column(String)
     status = Column(String)
+    created_at = Column(TIMESTAMP, nullable=True)
+    updated_at = Column(TIMESTAMP, nullable=True)
 
 class Broker(Base):
     __tablename__ = "broker"
@@ -154,6 +156,8 @@ class Broker(Base):
     code = Column(String)
     name = Column(String)
     status = Column(String)
+    created_at = Column(TIMESTAMP, nullable=True)
+    updated_at = Column(TIMESTAMP, nullable=True)
 
 class Clearer(Base):
     __tablename__ = "clearer"
@@ -162,6 +166,8 @@ class Clearer(Base):
     name = Column(String)
     leid = Column(String)  # Legal Entity Identifier
     status = Column(String)
+    created_at = Column(TIMESTAMP, nullable=True)
+    updated_at = Column(TIMESTAMP, nullable=True)
 
 class Trader(Base):
     __tablename__ = "trader"
@@ -169,6 +175,9 @@ class Trader(Base):
     user_id = Column(String)
     name = Column(String)
     desk = Column(String)
+    status = Column(String, default="ACTIVE")
+    created_at = Column(TIMESTAMP, nullable=True)
+    updated_at = Column(TIMESTAMP, nullable=True)
 
 class OrderHdr(Base):
     __tablename__ = "order_hdr"

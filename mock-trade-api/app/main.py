@@ -1,5 +1,22 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+import logging
+import os
+from datetime import datetime
+
+# Configure logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# Log startup info
+logger.info("=" * 80)
+logger.info("MockTrade API Starting Up")
+logger.info(f"Timestamp: {datetime.now()}")
+logger.info(f"DATABASE_URL: {os.getenv('DATABASE_URL', 'Not Set - Using SQLite')}")
+logger.info("=" * 80)
 
 # Legacy routes (keep for backward compatibility)
 from app.routes import order
@@ -17,6 +34,18 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# Add logging middleware
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    logger.info(f"REQUEST: {request.method} {request.url.path}")
+    try:
+        response = await call_next(request)
+        logger.info(f"RESPONSE: {request.method} {request.url.path} - Status: {response.status_code}")
+        return response
+    except Exception as e:
+        logger.error(f"REQUEST ERROR: {request.method} {request.url.path} - {str(e)}", exc_info=True)
+        raise
+
 # Enable CORS for frontend
 app.add_middleware(
     CORSMiddleware,
@@ -27,17 +56,26 @@ app.add_middleware(
 )
 
 # Register legacy routes
+logger.info("Registering legacy routes...")
 app.include_router(order.router)
 
 # Register new module routes
+logger.info("Registering static_data routes...")
 app.include_router(static_data_routes.router)
+logger.info("Registering market_data routes...")
 app.include_router(market_data_routes.router)
+logger.info("Registering enrichment routes...")
 app.include_router(enrichment_routes.router)
+logger.info("Registering trade routes...")
 app.include_router(trade_routes.router)
+logger.info("Registering security routes...")
 app.include_router(security_routes.router)
+
+logger.info("All routes registered successfully")
 
 @app.get("/")
 def root():
+    logger.info("Root endpoint called")
     return {
         "message": "MockTrade API - Modular Trading Platform",
         "version": "1.0.0",
@@ -54,6 +92,7 @@ def root():
 @app.get("/health")
 def health_check():
     """Health check endpoint"""
+    logger.info("Health check endpoint called - status: healthy")
     return {"status": "healthy"}
 
 @app.get("/api/v1/modules")

@@ -5,7 +5,7 @@ from typing import Optional, Dict, Any
 from datetime import datetime, date
 from app.shared.schemas import BaseSchema, TimestampedSchema
 
-class InstrumentSchema(TimestampedSchema):
+class InstrumentSchema(BaseSchema):
     """Response schema for Instrument"""
     instrument_id: str
     symbol: str

@@ -1,0 +1,23 @@
+# Build stage
+FROM node:20-alpine AS build
+WORKDIR /app
+
+# Accept build arg for API base, and set it as env so Vite can use it
+ARG VITE_API_BASE="/api"
+ENV VITE_API_BASE=${VITE_API_BASE}
+
+COPY package.json yarn.lock .
+RUN yarn install --frozen-lockfile
+COPY . .
+
+# Run build with environment variable available
+RUN yarn build
+
+# Serve stage
+FROM nginx:stable-alpine
+COPY --from=build /app/dist /usr/share/nginx/html
+# Custom nginx config
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

@@ -6,8 +6,149 @@ from app.database import get_db
 from app.modules.static_data import models, schemas
 from app.shared.services import publish_event, EventType
 import uuid
+import logging
+from datetime import datetime, timezone
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/static-data", tags=["Static Data"])
+
+# ============= TRADER ROUTES =============
+
+@router.post("/traders", response_model=schemas.TraderSchema)
+def create_trader(
+    trader: schemas.TraderCreateSchema,
+    db: Session = Depends(get_db)
+):
+    """Create a new trader"""
+    logger.info("=" * 80)
+    logger.info("CREATE TRADER: Starting trader creation")
+    logger.info(f"Input trader data: {trader.dict()}")
+
+    try:
+        trader_id = str(uuid.uuid4())
+        now = datetime.now(timezone.utc)
+        logger.info(f"Generated trader_id: {trader_id}")
+
+        db_trader = models.Trader(
+            trader_id=trader_id,
+            created_at=now,
+            updated_at=now,
+            **trader.dict()
+        )
+        logger.info(f"Created Trader model object: {db_trader.__dict__}")
+
+        db.add(db_trader)
+        logger.info("Added trader to session")
+
+        db.commit()
+        logger.info("Committed transaction")
+
+        db.refresh(db_trader)
+        logger.info(f"Refreshed trader from DB: {db_trader.__dict__}")
+
+        logger.info(f"CREATE TRADER: Successfully created trader {trader_id}")
+        logger.info("=" * 80)
+
+        return db_trader
+    except Exception as e:
+        logger.error(f"CREATE TRADER: ERROR - {str(e)}", exc_info=True)
+        logger.error("=" * 80)
+        db.rollback()
+        # Check for integrity errors
+        if "UNIQUE constraint failed" in str(e) or "unique constraint" in str(e).lower():
+            raise HTTPException(status_code=400, detail="Trader with this ID already exists")
+        raise
+
+@router.get("/traders/{trader_id}", response_model=schemas.TraderSchema)
+def get_trader(trader_id: str, db: Session = Depends(get_db)):
+    """Get trader by ID"""
+    logger.info(f"GET TRADER: Retrieving trader {trader_id}")
+
+    trader = db.query(models.Trader).filter(
+        models.Trader.trader_id == trader_id
+    ).first()
+
+    if not trader:
+        logger.warning(f"GET TRADER: Trader {trader_id} not found")
+        raise HTTPException(status_code=404, detail="Trader not found")
+
+    logger.info(f"GET TRADER: Found trader {trader_id}")
+    return trader
+
+@router.get("/traders", response_model=list[schemas.TraderSchema])
+def list_traders(db: Session = Depends(get_db)):
+    """List all traders"""
+    logger.info("LIST TRADERS: Listing all traders")
+
+    try:
+        traders = db.query(models.Trader).all()
+        logger.info(f"LIST TRADERS: Found {len(traders)} traders")
+        return traders
+    except Exception as e:
+        logger.error(f"LIST TRADERS: ERROR - {str(e)}", exc_info=True)
+        raise
+
+@router.put("/traders/{trader_id}", response_model=schemas.TraderSchema)
+def update_trader(
+    trader_id: str,
+    trader: schemas.TraderCreateSchema,
+    db: Session = Depends(get_db)
+):
+    """Update trader"""
+    logger.info(f"UPDATE TRADER: Updating trader {trader_id}")
+    logger.info(f"Update data: {trader.dict()}")
+
+    try:
+        db_trader = db.query(models.Trader).filter(
+            models.Trader.trader_id == trader_id
+        ).first()
+
+        if not db_trader:
+            logger.warning(f"UPDATE TRADER: Trader {trader_id} not found")
+            raise HTTPException(status_code=404, detail="Trader not found")
+
+        for key, value in trader.dict().items():
+            setattr(db_trader, key, value)
+            logger.info(f"Updated {key} = {value}")
+
+        db.commit()
+        db.refresh(db_trader)
+        logger.info(f"UPDATE TRADER: Successfully updated trader {trader_id}")
+
+        return db_trader
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"UPDATE TRADER: ERROR - {str(e)}", exc_info=True)
+        db.rollback()
+        raise
+
+@router.delete("/traders/{trader_id}")
+def delete_trader(trader_id: str, db: Session = Depends(get_db)):
+    """Delete trader"""
+    logger.info(f"DELETE TRADER: Deleting trader {trader_id}")
+
+    try:
+        db_trader = db.query(models.Trader).filter(
+            models.Trader.trader_id == trader_id
+        ).first()
+
+        if not db_trader:
+            logger.warning(f"DELETE TRADER: Trader {trader_id} not found")
+            raise HTTPException(status_code=404, detail="Trader not found")
+
+        db.delete(db_trader)
+        db.commit()
+        logger.info(f"DELETE TRADER: Successfully deleted trader {trader_id}")
+
+        return {"message": "Trader deleted"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"DELETE TRADER: ERROR - {str(e)}", exc_info=True)
+        db.rollback()
+        raise
 
 # ============= INSTRUMENT ROUTES =============
 
@@ -17,30 +158,56 @@ def create_instrument(
     db: Session = Depends(get_db)
 ):
     """Create a new instrument"""
-    from datetime import datetime, timezone
+    logger.info("=" * 80)
+    logger.info("CREATE INSTRUMENT: Starting instrument creation")
+    logger.info(f"Input instrument data: {instrument.dict()}")
 
-    payload = instrument.dict()
-    metadata = payload.pop('metadata', None)
+    try:
+        from datetime import datetime, timezone
 
-    db_instrument = models.Instrument(
-        instrument_id=str(uuid.uuid4()),
-        **payload,
-        created_at=datetime.now(timezone.utc),
-        metadata_json=metadata
-    )
-    db.add(db_instrument)
-    db.commit()
-    db.refresh(db_instrument)
+        payload = instrument.dict()
+        metadata = payload.pop('metadata', None)
 
-    # Map metadata_json back to metadata field for response schema
-    db_instrument.metadata = db_instrument.metadata_json
+        instrument_id = str(uuid.uuid4())
+        logger.info(f"Generated instrument_id: {instrument_id}")
 
-    publish_event(EventType.INSTRUMENT_CREATED, {
-        "instrument_id": db_instrument.instrument_id,
-        "symbol": db_instrument.symbol
-    }, "static_data")
+        db_instrument = models.Instrument(
+            instrument_id=instrument_id,
+            **payload,
+            created_at=datetime.now(timezone.utc),
+            metadata_json=metadata
+        )
+        logger.info(f"Created Instrument model object: {db_instrument.__dict__}")
 
-    return db_instrument
+        db.add(db_instrument)
+        logger.info("Added instrument to session")
+
+        db.commit()
+        logger.info("Committed transaction")
+
+        db.refresh(db_instrument)
+        logger.info(f"Refreshed instrument from DB: {db_instrument.__dict__}")
+
+        # Map metadata_json back to metadata field for response schema
+        db_instrument.metadata = db_instrument.metadata_json
+
+        publish_event(EventType.INSTRUMENT_CREATED, {
+            "instrument_id": db_instrument.instrument_id,
+            "symbol": db_instrument.symbol
+        }, "static_data")
+
+        logger.info(f"CREATE INSTRUMENT: Successfully created instrument {instrument_id}")
+        logger.info("=" * 80)
+
+        return db_instrument
+    except Exception as e:
+        logger.error(f"CREATE INSTRUMENT: ERROR - {str(e)}", exc_info=True)
+        logger.error("=" * 80)
+        db.rollback()
+        # Check for integrity errors
+        if "UNIQUE constraint failed" in str(e) or "unique constraint" in str(e).lower():
+            raise HTTPException(status_code=400, detail="Instrument with this symbol already exists")
+        raise
 
 @router.get("/instruments/{instrument_id}", response_model=schemas.InstrumentSchema)
 def get_instrument(instrument_id: str, db: Session = Depends(get_db)):
@@ -116,35 +283,72 @@ def create_account(
     db: Session = Depends(get_db)
 ):
     """Create a new account"""
-    db_account = models.Account(
-        account_id=str(uuid.uuid4()),
-        **account.dict()
-    )
-    db.add(db_account)
-    db.commit()
-    db.refresh(db_account)
+    logger.info("=" * 80)
+    logger.info("CREATE ACCOUNT: Starting account creation")
+    logger.info(f"Input account data: {account.dict()}")
 
-    publish_event(EventType.ACCOUNT_CREATED, {
-        "account_id": db_account.account_id,
-        "code": db_account.code
-    }, "static_data")
+    try:
+        now = datetime.now(timezone.utc)
+        db_account = models.Account(
+            account_id=str(uuid.uuid4()),
+            created_at=now,
+            updated_at=now,
+            **account.dict()
+        )
+        logger.info(f"Created Account model object with ID: {db_account.account_id}")
 
-    return db_account
+        db.add(db_account)
+        db.commit()
+        db.refresh(db_account)
+
+        logger.info(f"CREATE ACCOUNT: Successfully created account {db_account.account_id}")
+        logger.info("=" * 80)
+
+        publish_event(EventType.ACCOUNT_CREATED, {
+            "account_id": db_account.account_id,
+            "code": db_account.code
+        }, "static_data")
+
+        return db_account
+    except Exception as e:
+        logger.error(f"CREATE ACCOUNT: ERROR - {str(e)}", exc_info=True)
+        logger.error("=" * 80)
+        db.rollback()
+        raise
 
 @router.get("/accounts/{account_id}", response_model=schemas.AccountSchema)
 def get_account(account_id: str, db: Session = Depends(get_db)):
     """Get account by ID"""
-    account = db.query(models.Account).filter(
-        models.Account.account_id == account_id
-    ).first()
-    if not account:
-        raise HTTPException(status_code=404, detail="Account not found")
-    return account
+    logger.info(f"GET ACCOUNT: Retrieving account {account_id}")
+
+    try:
+        account = db.query(models.Account).filter(
+            models.Account.account_id == account_id
+        ).first()
+        if not account:
+            logger.warning(f"GET ACCOUNT: Account {account_id} not found")
+            raise HTTPException(status_code=404, detail="Account not found")
+
+        logger.info(f"GET ACCOUNT: Found account {account_id}")
+        return account
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"GET ACCOUNT: ERROR - {str(e)}", exc_info=True)
+        raise
 
 @router.get("/accounts", response_model=list[schemas.AccountSchema])
 def list_accounts(db: Session = Depends(get_db)):
     """List all accounts"""
-    return db.query(models.Account).all()
+    logger.info("LIST ACCOUNTS: Listing all accounts")
+
+    try:
+        accounts = db.query(models.Account).all()
+        logger.info(f"LIST ACCOUNTS: Found {len(accounts)} accounts")
+        return accounts
+    except Exception as e:
+        logger.error(f"LIST ACCOUNTS: ERROR - {str(e)}", exc_info=True)
+        raise
 
 @router.put("/accounts/{account_id}", response_model=schemas.AccountSchema)
 def update_account(
@@ -153,31 +357,57 @@ def update_account(
     db: Session = Depends(get_db)
 ):
     """Update account"""
-    db_account = db.query(models.Account).filter(
-        models.Account.account_id == account_id
-    ).first()
-    if not db_account:
-        raise HTTPException(status_code=404, detail="Account not found")
+    logger.info(f"UPDATE ACCOUNT: Updating account {account_id}")
+    logger.info(f"Update data: {account.dict()}")
 
-    for key, value in account.dict().items():
-        setattr(db_account, key, value)
+    try:
+        db_account = db.query(models.Account).filter(
+            models.Account.account_id == account_id
+        ).first()
+        if not db_account:
+            logger.warning(f"UPDATE ACCOUNT: Account {account_id} not found")
+            raise HTTPException(status_code=404, detail="Account not found")
 
-    db.commit()
-    db.refresh(db_account)
-    return db_account
+        for key, value in account.dict().items():
+            setattr(db_account, key, value)
+
+        db_account.updated_at = datetime.now(timezone.utc)
+        db.commit()
+        db.refresh(db_account)
+        logger.info(f"UPDATE ACCOUNT: Successfully updated account {account_id}")
+
+        return db_account
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"UPDATE ACCOUNT: ERROR - {str(e)}", exc_info=True)
+        db.rollback()
+        raise
 
 @router.delete("/accounts/{account_id}")
 def delete_account(account_id: str, db: Session = Depends(get_db)):
     """Delete account"""
-    db_account = db.query(models.Account).filter(
-        models.Account.account_id == account_id
-    ).first()
-    if not db_account:
-        raise HTTPException(status_code=404, detail="Account not found")
+    logger.info(f"DELETE ACCOUNT: Deleting account {account_id}")
 
-    db.delete(db_account)
-    db.commit()
-    return {"message": "Account deleted"}
+    try:
+        db_account = db.query(models.Account).filter(
+            models.Account.account_id == account_id
+        ).first()
+        if not db_account:
+            logger.warning(f"DELETE ACCOUNT: Account {account_id} not found")
+            raise HTTPException(status_code=404, detail="Account not found")
+
+        db.delete(db_account)
+        db.commit()
+        logger.info(f"DELETE ACCOUNT: Successfully deleted account {account_id}")
+
+        return {"message": "Account deleted"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"DELETE ACCOUNT: ERROR - {str(e)}", exc_info=True)
+        db.rollback()
+        raise
 
 # ============= BROKER ROUTES =============
 
@@ -187,14 +417,33 @@ def create_broker(
     db: Session = Depends(get_db)
 ):
     """Create a new broker"""
-    db_broker = models.Broker(
-        broker_id=str(uuid.uuid4()),
-        **broker.dict()
-    )
-    db.add(db_broker)
-    db.commit()
-    db.refresh(db_broker)
-    return db_broker
+    logger.info("=" * 80)
+    logger.info("CREATE BROKER: Starting broker creation")
+    logger.info(f"Input broker data: {broker.dict()}")
+
+    try:
+        now = datetime.now(timezone.utc)
+        db_broker = models.Broker(
+            broker_id=str(uuid.uuid4()),
+            created_at=now,
+            updated_at=now,
+            **broker.dict()
+        )
+        logger.info(f"Created Broker model object with ID: {db_broker.broker_id}")
+
+        db.add(db_broker)
+        db.commit()
+        db.refresh(db_broker)
+
+        logger.info(f"CREATE BROKER: Successfully created broker {db_broker.broker_id}")
+        logger.info("=" * 80)
+
+        return db_broker
+    except Exception as e:
+        logger.error(f"CREATE BROKER: ERROR - {str(e)}", exc_info=True)
+        logger.error("=" * 80)
+        db.rollback()
+        raise
 
 @router.get("/brokers/{broker_id}", response_model=schemas.BrokerSchema)
 def get_broker(broker_id: str, db: Session = Depends(get_db)):

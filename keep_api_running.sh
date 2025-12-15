@@ -20,10 +20,14 @@ if [ -f "$VENV_DIR/bin/activate" ]; then
   source "$VENV_DIR/bin/activate"
 fi
 
+# Set DATABASE_URL for PostgreSQL
+export DATABASE_URL='postgresql://ravikiranreddygajula@localhost:5432/mocktrade'
+
 # Print environment info to log
 echo "=== Starting MockTrade API - $(date) ===" >> "$LOGFILE"
 echo "Working dir: $(pwd)" >> "$LOGFILE"
 echo "Python: $($PYTHON --version 2>&1)" >> "$LOGFILE"
+echo "DATABASE_URL: $DATABASE_URL" >> "$LOGFILE"
 
 # Exec uvicorn so it becomes the managed process (launchd will respawn if it exits when KeepAlive true)
 exec $PYTHON -m uvicorn app.main:app --host 127.0.0.1 --port 8000 >> "$LOGFILE" 2>> "$ERRFILE"

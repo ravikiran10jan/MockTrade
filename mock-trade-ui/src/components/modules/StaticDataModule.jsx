@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 
-const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
+// Prefer an explicit VITE_API_BASE; fall back to empty string so dev proxy forwards relative /api calls
+const API_BASE = import.meta.env.VITE_API_BASE || "";
 const FONT_FAMILY = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
 
 function StaticDataModule() {
@@ -25,19 +26,33 @@ function StaticDataModule() {
     fetchData();
   }, [activeSection]);
 
+  const normalizeArray = (payload) => {
+    if (Array.isArray(payload)) return payload;
+    if (payload && Array.isArray(payload.items)) return payload.items;
+    return [];
+  };
+
   const fetchData = async () => {
     setLoading(true);
     try {
       const section = activeSection;
       const response = await fetch(`${API_BASE}/api/v1/static-data/${section}`);
-      const data = await response.json();
 
-      if (section === "instruments") setInstruments(data);
-      else if (section === "accounts") setAccounts(data);
-      else if (section === "traders") setTraders(data);
-      else if (section === "brokers") setBrokers(data);
-      else if (section === "clearers") setClearers(data);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorText || response.statusText}`);
+      }
+
+      const data = await response.json();
+      const normalized = normalizeArray(data);
+
+      if (section === "instruments") setInstruments(normalized);
+      else if (section === "accounts") setAccounts(normalized);
+      else if (section === "traders") setTraders(normalized);
+      else if (section === "brokers") setBrokers(normalized);
+      else if (section === "clearers") setClearers(normalized);
     } catch (error) {
+      console.error("StaticData fetch error", error);
       setMessage(`Error loading ${activeSection}: ${error.message}`);
     }
     setLoading(false);
@@ -234,27 +249,27 @@ function StaticDataModule() {
   const sections = {
     instruments: {
       title: "Instruments",
-      data: instruments,
+      data: Array.isArray(instruments) ? instruments : [],
       columns: ["instrument_id", "symbol", "name", "asset_class", "instrument_type", "status"],
     },
     accounts: {
       title: "Accounts",
-      data: accounts,
+      data: Array.isArray(accounts) ? accounts : [],
       columns: ["account_id", "code", "name", "status"],
     },
     traders: {
       title: "Traders",
-      data: traders,
+      data: Array.isArray(traders) ? traders : [],
       columns: ["trader_id", "user_id", "name", "desk"],
     },
     brokers: {
       title: "Brokers",
-      data: brokers,
+      data: Array.isArray(brokers) ? brokers : [],
       columns: ["broker_id", "code", "name", "status"],
     },
     clearers: {
       title: "Clearers",
-      data: clearers,
+      data: Array.isArray(clearers) ? clearers : [],
       columns: ["clearer_id", "code", "name", "leid", "status"],
     },
   };

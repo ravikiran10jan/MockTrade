@@ -1,0 +1,44 @@
+INFO:     Will watch for changes in these directories: ['/Users/ravikiranreddygajula/MockTrade/mock-trade-api']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [3913] using WatchFiles
+2025-12-14 18:08:50,957 - app.main - INFO - ================================================================================
+2025-12-14 18:08:50,957 - app.main - INFO - MockTrade API Starting Up
+2025-12-14 18:08:50,957 - app.main - INFO - Timestamp: 2025-12-14 18:08:50.957179
+2025-12-14 18:08:50,957 - app.main - INFO - DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mocktrade
+2025-12-14 18:08:50,957 - app.main - INFO - ================================================================================
+2025-12-14 18:08:51,154 - app.database - INFO - ================================================================================
+2025-12-14 18:08:51,154 - app.database - INFO - DATABASE CONFIGURATION
+2025-12-14 18:08:51,154 - app.database - INFO - DATABASE_URL env var: postgresql://postgres:postgres@localhost:5432/mocktrade
+2025-12-14 18:08:51,154 - app.database - INFO - DATABASE: Using PostgreSQL connection: postgresql://postgres:postgres@localhost:5432/mocktrade
+2025-12-14 18:08:51,220 - app.database - INFO - Connecting to DB at: postgresql://postgres:postgres@localhost:5432/mocktrade
+2025-12-14 18:08:51,220 - app.database - INFO - ================================================================================
+/Users/ravikiranreddygajula/Library/Python/3.9/lib/python/site-packages/pydantic/_internal/_config.py:383: UserWarning: Valid config keys have changed in V2:
+* 'orm_mode' has been renamed to 'from_attributes'
+  warnings.warn(message, UserWarning)
+2025-12-14 18:08:51,361 - app.main - INFO - Registering legacy routes...
+2025-12-14 18:08:51,362 - app.main - INFO - Registering static_data routes...
+2025-12-14 18:08:51,382 - app.main - INFO - Registering market_data routes...
+2025-12-14 18:08:51,384 - app.main - INFO - Registering enrichment routes...
+2025-12-14 18:08:51,385 - app.main - INFO - Registering trade routes...
+2025-12-14 18:08:51,389 - app.main - INFO - Registering security routes...
+2025-12-14 18:08:51,400 - app.main - INFO - All routes registered successfully
+INFO:     Started server process [3917]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+2025-12-14 18:08:55,086 - app.main - INFO - REQUEST: GET /health
+2025-12-14 18:08:55,093 - app.main - INFO - Health check endpoint called - status: healthy
+2025-12-14 18:08:55,094 - app.main - INFO - RESPONSE: GET /health - Status: 200
+INFO:     127.0.0.1:55271 - "GET /health HTTP/1.1" 200 OK
+2025-12-14 18:18:41,977 - app.main - INFO - REQUEST: GET /health
+2025-12-14 18:18:41,979 - app.main - INFO - Health check endpoint called - status: healthy
+2025-12-14 18:18:41,979 - app.main - INFO - RESPONSE: GET /health - Status: 200
+INFO:     127.0.0.1:55851 - "GET /health HTTP/1.1" 200 OK
+2025-12-14 18:47:56,060 - app.main - INFO - REQUEST: GET /health
+2025-12-14 18:47:56,074 - app.main - INFO - Health check endpoint called - status: healthy
+2025-12-14 18:47:56,077 - app.main - INFO - RESPONSE: GET /health - Status: 200
+INFO:     127.0.0.1:49737 - "GET /health HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [3917]
+INFO:     Stopping reloader process [3913]

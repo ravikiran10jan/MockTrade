@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 
+const API_BASE = import.meta.env.VITE_API_BASE || '';
 const FONT_FAMILY = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
 
 function MarketDataModule() {
@@ -16,7 +17,7 @@ function MarketDataModule() {
   const fetchMarketData = async () => {
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:8000/api/v1/market-data/");
+      const response = await fetch(`${API_BASE}/api/v1/market-data/`);
       if (response.ok) {
         const data = await response.json();
         setMarketData(data);
@@ -30,7 +31,7 @@ function MarketDataModule() {
   const handleUpdateMarketData = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch("http://localhost:8000/api/v1/market-data/market-data", {
+      const response = await fetch(`${API_BASE}/api/v1/market-data/market-data`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

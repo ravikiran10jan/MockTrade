@@ -1,0 +1,10 @@
+
+> mock-trade-ui@0.0.0 dev
+> vite --port 5174
+
+
+  VITE v4.5.14  ready in 498 ms
+
+  ➜  Local:   http://localhost:5174/
+  ➜  Network: http://192.168.0.136:5174/
+  ➜  press h to show help

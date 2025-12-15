@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 const FONT_FAMILY = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
+const API_BASE = import.meta.env.VITE_API_BASE || "";
 
 function EnrichmentModule() {
   const [enrichmentTab, setEnrichmentTab] = useState("portfolio"); // portfolio or trader
@@ -8,6 +9,7 @@ function EnrichmentModule() {
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(false);
 
   // Example Trader Enrichment Mappings - Maps external trader UUIDs to internal IDs
   const [traderMappings, setTraderMappings] = useState([
@@ -282,227 +284,51 @@ function EnrichmentModule() {
   ]);
 
   // ...existing code...
-  const [portfolioMappings, setPortfolioMappings] = useState([
-    {
-      rule_id: 1001,
-      rule_type: "PORTFOLIO",
-      source_system: "BLBG",
-      trader_account_id: "TRADER_001_FX",
-      instrument_code: "EURUSD",
-      portfolio_code: "PORT_FX_EU_001",
-      comments: "Bloomberg FX desk EUR/USD spot trades",
-      active: true
-    },
-    {
-      rule_id: 1002,
-      rule_type: "PORTFOLIO",
-      source_system: "BLBG",
-      trader_account_id: "TRADER_001_FX",
-      instrument_code: "GBPUSD",
-      portfolio_code: "PORT_FX_GB_001",
-      comments: "Bloomberg FX desk GBP/USD spot trades",
-      active: true
-    },
-    {
-      rule_id: 1003,
-      rule_type: "PORTFOLIO",
-      source_system: "BLBG",
-      trader_account_id: "TRADER_001_FX",
-      instrument_code: "",
-      portfolio_code: "PORT_FX_OTHER_001",
-      comments: "Bloomberg FX desk - any other currency pairs",
-      active: true
-    },
-    {
-      rule_id: 1004,
-      rule_type: "PORTFOLIO",
-      source_system: "MUREX",
-      trader_account_id: "DESK_RATES_APAC",
-      instrument_code: "IRS_JPY_5Y",
-      portfolio_code: "PORT_RATES_JPY_APAC",
-      comments: "Murex rates desk - JPY 5Y IRS from APAC",
-      active: true
-    },
-    {
-      rule_id: 1005,
-      rule_type: "PORTFOLIO",
-      source_system: "MUREX",
-      trader_account_id: "DESK_RATES_APAC",
-      instrument_code: "IRS_AUD_10Y",
-      portfolio_code: "PORT_RATES_AUD_APAC",
-      comments: "Murex rates desk - AUD 10Y IRS from APAC",
-      active: true
-    },
-    {
-      rule_id: 1006,
-      rule_type: "PORTFOLIO",
-      source_system: "MUREX",
-      trader_account_id: "DESK_RATES_EMEA",
-      instrument_code: "IRS_EUR_2Y",
-      portfolio_code: "PORT_RATES_EUR_EMEA",
-      comments: "Murex rates desk - EUR 2Y IRS from EMEA",
-      active: true
-    },
-    {
-      rule_id: 1007,
-      rule_type: "PORTFOLIO",
-      source_system: "MUREX",
-      trader_account_id: "DESK_RATES_EMEA",
-      instrument_code: "IRS_EUR_10Y",
-      portfolio_code: "PORT_RATES_EUR_LONG_EMEA",
-      comments: "Murex rates desk - EUR long-dated IRS from EMEA",
-      active: true
-    },
-    {
-      rule_id: 1008,
-      rule_type: "PORTFOLIO",
-      source_system: "MUREX",
-      trader_account_id: "DESK_RATES_EMEA",
-      instrument_code: "",
-      portfolio_code: "PORT_RATES_OTHER_EMEA",
-      comments: "Murex rates desk - any other instruments",
-      active: true
-    },
-    {
-      rule_id: 1009,
-      rule_type: "PORTFOLIO",
-      source_system: "SUMMIT",
-      trader_account_id: "EQUITY_DESK_NA",
-      instrument_code: "SPX",
-      portfolio_code: "PORT_EQ_SPX_NA",
-      comments: "Summit equity desk - S&P 500 index",
-      active: true
-    },
-    {
-      rule_id: 1010,
-      rule_type: "PORTFOLIO",
-      source_system: "SUMMIT",
-      trader_account_id: "EQUITY_DESK_NA",
-      instrument_code: "NDX",
-      portfolio_code: "PORT_EQ_NDX_NA",
-      comments: "Summit equity desk - NASDAQ 100 index",
-      active: true
-    },
-    {
-      rule_id: 1011,
-      rule_type: "PORTFOLIO",
-      source_system: "SUMMIT",
-      trader_account_id: "EQUITY_DESK_EMEA",
-      instrument_code: "STOXX600",
-      portfolio_code: "PORT_EQ_STOXX_EMEA",
-      comments: "Summit equity desk - STOXX 600 European index",
-      active: true
-    },
-    {
-      rule_id: 1012,
-      rule_type: "PORTFOLIO",
-      source_system: "SUMMIT",
-      trader_account_id: "EQUITY_DESK_EMEA",
-      instrument_code: "FTSE100",
-      portfolio_code: "PORT_EQ_FTSE_EMEA",
-      comments: "Summit equity desk - FTSE 100 UK index",
-      active: false
-    },
-    {
-      rule_id: 1013,
-      rule_type: "PORTFOLIO",
-      source_system: "BLBG",
-      trader_account_id: "TRADER_002_FIXED",
-      instrument_code: "US_BOND_10Y",
-      portfolio_code: "PORT_BONDS_US_10Y",
-      comments: "Bloomberg fixed income desk - US 10Y Treasury",
-      active: true
-    },
-    {
-      rule_id: 1014,
-      rule_type: "PORTFOLIO",
-      source_system: "BLBG",
-      trader_account_id: "TRADER_002_FIXED",
-      instrument_code: "US_BOND_5Y",
-      portfolio_code: "PORT_BONDS_US_5Y",
-      comments: "Bloomberg fixed income desk - US 5Y Treasury",
-      active: true
-    },
-    {
-      rule_id: 1015,
-      rule_type: "PORTFOLIO",
-      source_system: "BLBG",
-      trader_account_id: "TRADER_002_FIXED",
-      instrument_code: "",
-      portfolio_code: "PORT_BONDS_OTHER",
-      comments: "Bloomberg fixed income desk - other bonds/credits",
-      active: true
-    },
-    {
-      rule_id: 1016,
-      rule_type: "PORTFOLIO",
-      source_system: "MUREX",
-      trader_account_id: "COMMODITIES_DESK",
-      instrument_code: "CRUDE_WTI",
-      portfolio_code: "PORT_CMDTY_WTI",
-      comments: "Murex commodities - WTI crude oil",
-      active: true
-    },
-    {
-      rule_id: 1017,
-      rule_type: "PORTFOLIO",
-      source_system: "MUREX",
-      trader_account_id: "COMMODITIES_DESK",
-      instrument_code: "GOLD",
-      portfolio_code: "PORT_CMDTY_GOLD",
-      comments: "Murex commodities - precious metals",
-      active: true
-    },
-    {
-      rule_id: 1018,
-      rule_type: "PORTFOLIO",
-      source_system: "SUMMIT",
-      trader_account_id: "VOL_DESK",
-      instrument_code: "VIX",
-      portfolio_code: "PORT_VOL_VIX",
-      comments: "Summit volatility desk - VIX index",
-      active: true
-    },
-    {
-      rule_id: 1019,
-      rule_type: "PORTFOLIO",
-      source_system: "SUMMIT",
-      trader_account_id: "VOL_DESK",
-      instrument_code: "MOVE",
-      portfolio_code: "PORT_VOL_MOVE",
-      comments: "Summit volatility desk - MOVE bond volatility index",
-      active: true
-    },
-    {
-      rule_id: 1020,
-      rule_type: "PORTFOLIO",
-      source_system: "BLBG",
-      trader_account_id: "CREDIT_DESK",
-      instrument_code: "CDS_INDEX_HY",
-      portfolio_code: "PORT_CREDIT_HY",
-      comments: "Bloomberg credit desk - High yield CDS index",
-      active: true
+  const [portfolioMappings, setPortfolioMappings] = useState([]);
+
+  // Fetch portfolio mappings on mount and when tab changes
+  useEffect(() => {
+    if (enrichmentTab === "portfolio") {
+      fetchPortfolioMappings();
     }
-  ]);
+  }, [enrichmentTab]);
+
+  const fetchPortfolioMappings = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_BASE}/api/v1/enrichment/portfolio-mappings?active_only=false`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      const data = await response.json();
+      setPortfolioMappings(data);
+    } catch (error) {
+      console.error("Error fetching portfolio mappings:", error);
+      setMessage(`Error: Failed to fetch mappings - ${error.message}`);
+      setTimeout(() => setMessage(""), 5000);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredMappings = portfolioMappings.filter(m =>
     m.trader_account_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    m.instrument_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (m.instrument_code?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
     m.portfolio_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
     m.source_system.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleCreateMapping = async (e) => {
     e.preventDefault();
+    setLoading(true);
     try {
       if (!formData.source_system || !formData.trader_account_id || !formData.portfolio_code) {
         setMessage("Error: Source system, trader account, and portfolio code are required");
+        setLoading(false);
         return;
       }
 
-      const newMapping = {
-        rule_id: Math.max(...portfolioMappings.map(m => m.rule_id), 0) + 1,
-        rule_type: "PORTFOLIO",
+      const mappingData = {
         source_system: formData.source_system,
         trader_account_id: formData.trader_account_id,
         instrument_code: formData.instrument_code || "",
@@ -511,28 +337,95 @@ function EnrichmentModule() {
         active: formData.active !== false
       };
 
+      const response = await fetch(`${API_BASE}/api/v1/enrichment/portfolio-mappings`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(mappingData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const newMapping = await response.json();
       setPortfolioMappings([...portfolioMappings, newMapping]);
       setMessage("✓ Mapping created successfully");
       setShowForm(false);
       setFormData({});
       setTimeout(() => setMessage(""), 3000);
     } catch (error) {
-      setMessage(`Error: ${error.message}`);
+      console.error("Error creating mapping:", error);
+      setMessage(`Create failed: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const toggleActive = (ruleId) => {
-    setPortfolioMappings(
-      portfolioMappings.map(m =>
-        m.rule_id === ruleId ? { ...m, active: !m.active } : m
-      )
-    );
+  const toggleActive = async (ruleId) => {
+    setLoading(true);
+    try {
+      const mapping = portfolioMappings.find(m => m.rule_id === ruleId);
+      if (!mapping) return;
+
+      const response = await fetch(`${API_BASE}/api/v1/enrichment/portfolio-mappings/${ruleId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          active: !mapping.active
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || `HTTP ${response.status}`);
+      }
+
+      const updatedMapping = await response.json();
+      setPortfolioMappings(
+        portfolioMappings.map(m =>
+          m.rule_id === ruleId ? updatedMapping : m
+        )
+      );
+      setMessage("✓ Mapping updated successfully");
+      setTimeout(() => setMessage(""), 3000);
+    } catch (error) {
+      console.error("Error toggling mapping:", error);
+      setMessage(`Error: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const deleteMapping = (ruleId) => {
-    setPortfolioMappings(portfolioMappings.filter(m => m.rule_id !== ruleId));
-    setMessage("✓ Mapping deleted");
-    setTimeout(() => setMessage(""), 3000);
+  const deleteMapping = async (ruleId) => {
+    if (!window.confirm("Are you sure you want to delete this mapping?")) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_BASE}/api/v1/enrichment/portfolio-mappings/${ruleId}`, {
+        method: "DELETE"
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || `HTTP ${response.status}`);
+      }
+
+      setPortfolioMappings(portfolioMappings.filter(m => m.rule_id !== ruleId));
+      setMessage("✓ Mapping deleted");
+      setTimeout(() => setMessage(""), 3000);
+    } catch (error) {
+      console.error("Error deleting mapping:", error);
+      setMessage(`Error: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

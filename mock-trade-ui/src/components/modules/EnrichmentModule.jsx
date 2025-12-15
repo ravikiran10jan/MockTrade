@@ -313,7 +313,7 @@ function EnrichmentModule() {
 
   const filteredMappings = portfolioMappings.filter(m =>
     m.trader_account_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (m.instrument_code && m.instrument_code.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (m.instrument_code?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
     m.portfolio_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
     m.source_system.toLowerCase().includes(searchTerm.toLowerCase())
   );

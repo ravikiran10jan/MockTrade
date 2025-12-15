@@ -23,3 +23,37 @@ class EnrichedOrderSchema(BaseModel):
     class Config:
         from_attributes = True
 
+
+# Portfolio Enrichment Mapping Schemas
+class PortfolioEnrichmentMappingCreate(BaseModel):
+    source_system: str
+    trader_account_id: str
+    instrument_code: Optional[str] = ""
+    portfolio_code: str
+    comments: Optional[str] = ""
+    active: Optional[bool] = True
+
+
+class PortfolioEnrichmentMappingUpdate(BaseModel):
+    source_system: Optional[str] = None
+    trader_account_id: Optional[str] = None
+    instrument_code: Optional[str] = None
+    portfolio_code: Optional[str] = None
+    comments: Optional[str] = None
+    active: Optional[bool] = None
+
+
+class PortfolioEnrichmentMappingResponse(BaseModel):
+    rule_id: int
+    rule_type: str = "PORTFOLIO"
+    source_system: str
+    trader_account_id: str
+    instrument_code: Optional[str] = ""
+    portfolio_code: str
+    comments: Optional[str] = ""
+    active: bool
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+

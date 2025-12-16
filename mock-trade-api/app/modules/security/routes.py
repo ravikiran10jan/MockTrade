@@ -19,6 +19,7 @@ from app.modules.security.schemas import (
     UserRoleDetailSchema, RolePermissionDetailSchema,
     SecurityConfigSchema, UserSecurityContextSchema
 )
+from app.modules.auth.middleware import get_current_user
 
 router = APIRouter(prefix="/api/v1/security", tags=["security"])
 
@@ -47,7 +48,7 @@ def create_role(role: RoleCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/roles", response_model=list[RoleSchema])
-def list_roles(status: str = None, db: Session = Depends(get_db)):
+def list_roles(status: str = None, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
     """List all roles, optionally filtered by status"""
     query = db.query(Role)
     if status:
@@ -487,6 +488,7 @@ def check_user_permission(user_id: str, module_name: str, permission_type: str, 
         return {"has_permission": False, "message": "Permission type not found"}
 
     # Check if any of user's roles has the required permission
+    # First check for direct module permission
     mapping = db.query(RolePermissionMapping).filter(
         and_(
             RolePermissionMapping.role_id.in_(role_ids),
@@ -495,7 +497,51 @@ def check_user_permission(user_id: str, module_name: str, permission_type: str, 
             RolePermissionMapping.status == "ACTIVE"
         )
     ).first()
-
+    
+    # If no direct permission, check for "All" module permission
+    if not mapping:
+        # Get the "All" module
+        all_module = db.query(Module).filter(Module.module_name == "All").first()
+        if all_module:
+            # Check if user has permission for "All" module
+            mapping = db.query(RolePermissionMapping).filter(
+                and_(
+                    RolePermissionMapping.role_id.in_(role_ids),
+                    RolePermissionMapping.module_id == all_module.module_id,
+                    RolePermissionMapping.permission_id == permission.permission_id,
+                    RolePermissionMapping.status == "ACTIVE"
+                )
+            ).first()
+    
+    # Also check if user has READ_WRITE permission but requesting READ (READ_WRITE includes READ)
+    if not mapping and permission_type == "READ":
+        # Check for direct READ_WRITE permission
+        read_write_perm = db.query(Permission).filter(Permission.permission_name == "READ_WRITE").first()
+        if read_write_perm:
+            mapping = db.query(RolePermissionMapping).filter(
+                and_(
+                    RolePermissionMapping.role_id.in_(role_ids),
+                    RolePermissionMapping.module_id == module.module_id,
+                    RolePermissionMapping.permission_id == read_write_perm.permission_id,
+                    RolePermissionMapping.status == "ACTIVE"
+                )
+            ).first()
+            
+            # If no direct permission, check for "All" module READ_WRITE permission
+            if not mapping:
+                # Get the "All" module
+                all_module = db.query(Module).filter(Module.module_name == "All").first()
+                if all_module:
+                    # Check if user has READ_WRITE permission for "All" module
+                    mapping = db.query(RolePermissionMapping).filter(
+                        and_(
+                            RolePermissionMapping.role_id.in_(role_ids),
+                            RolePermissionMapping.module_id == all_module.module_id,
+                            RolePermissionMapping.permission_id == read_write_perm.permission_id,
+                            RolePermissionMapping.status == "ACTIVE"
+                        )
+                    ).first()
+    
     has_permission = mapping is not None
     return {
         "has_permission": has_permission,

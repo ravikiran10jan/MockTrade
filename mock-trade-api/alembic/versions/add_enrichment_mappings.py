@@ -30,9 +30,12 @@ def upgrade() -> None:
         'portfolio_enrichment_mapping',
         sa.Column('rule_id', sa.Integer(), nullable=False),
         sa.Column('source_system', sa.String(), nullable=False),
-        sa.Column('trader_account_id', sa.String(), nullable=False),
+        # split trader/account into separate fields
+        sa.Column('trader_id', sa.String(), nullable=True),
+        sa.Column('account_id', sa.String(), nullable=True),
         sa.Column('instrument_code', sa.String(), nullable=True),
-        sa.Column('portfolio_code', sa.String(), nullable=False),
+        # rename portfolio_code -> portfolio
+        sa.Column('portfolio', sa.String(), nullable=False),
         sa.Column('comments', sa.String(), nullable=True),
         sa.Column('active', sa.String(), default='Y'),
         sa.Column('created_at', sa.TIMESTAMP(), nullable=False),
@@ -40,7 +43,8 @@ def upgrade() -> None:
     )
     op.create_index('ix_portfolio_enrichment_mapping_rule_id', 'portfolio_enrichment_mapping', ['rule_id'])
     op.create_index('ix_portfolio_enrichment_mapping_source_system', 'portfolio_enrichment_mapping', ['source_system'])
-    op.create_index('ix_portfolio_enrichment_mapping_trader_account_id', 'portfolio_enrichment_mapping', ['trader_account_id'])
+    op.create_index('ix_portfolio_enrichment_mapping_trader_id', 'portfolio_enrichment_mapping', ['trader_id'])
+    op.create_index('ix_portfolio_enrichment_mapping_account_id', 'portfolio_enrichment_mapping', ['account_id'])
     op.create_index('ix_portfolio_enrichment_mapping_active', 'portfolio_enrichment_mapping', ['active'])
 
     # Create trader_enrichment_mapping table
@@ -122,7 +126,8 @@ def downgrade() -> None:
     op.drop_table('trader_enrichment_mapping')
 
     op.drop_index('ix_portfolio_enrichment_mapping_active', table_name='portfolio_enrichment_mapping')
-    op.drop_index('ix_portfolio_enrichment_mapping_trader_account_id', table_name='portfolio_enrichment_mapping')
+    op.drop_index('ix_portfolio_enrichment_mapping_account_id', table_name='portfolio_enrichment_mapping')
+    op.drop_index('ix_portfolio_enrichment_mapping_trader_id', table_name='portfolio_enrichment_mapping')
     op.drop_index('ix_portfolio_enrichment_mapping_source_system', table_name='portfolio_enrichment_mapping')
     op.drop_index('ix_portfolio_enrichment_mapping_rule_id', table_name='portfolio_enrichment_mapping')
     op.drop_table('portfolio_enrichment_mapping')

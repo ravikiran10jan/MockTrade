@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-Seed script to insert three instruments into the database using SQLAlchemy models.
-Runs against configured DATABASE_URL (falls back to sqlite dev.db).
+Seed script to insert instruments into the database using SQLAlchemy models.
+This script will NOT create tables automatically; ensure the schema exists (use Alembic
+or scripts/init_db_once.py to create tables before running this seed script).
 """
 import os
 import sys
@@ -13,12 +14,13 @@ sys.path.insert(0, str(ROOT))
 
 os.environ.setdefault('DATABASE_URL', os.getenv('DATABASE_URL', 'sqlite:///./dev.db'))
 
-from app.database import SessionLocal, engine, Base
+from app.database import SessionLocal, engine
 from app.models import Instrument
 from datetime import datetime
 import json
 
-Base.metadata.create_all(bind=engine)
+print('NOTE: This seed script assumes the database schema already exists.')
+print('If needed, create schema first: python3 scripts/init_db_once.py --seed')
 
 instruments = [
     {
@@ -101,11 +103,6 @@ def seed():
                 status=ins.get("status", "ACTIVE"),
                 created_at=datetime.utcnow(),
                 metadata_json=ins.get("metadata"),
-                booking_code=ins.get("metadata", {}).get("booking_code"),
-                product_code=ins.get("metadata", {}).get("product_code"),
-                reporting_mic=ins.get("metadata", {}).get("reporting_mic"),
-                clearing=ins.get("metadata", {}).get("clearing"),
-                confirmation_type=ins.get("metadata", {}).get("confirmation_type")
             )
             db.add(db_ins)
         db.commit()

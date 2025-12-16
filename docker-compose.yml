@@ -35,6 +35,7 @@ services:
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     volumes:
       - ./mock-trade-api:/app
+      - ./scripts:/app/scripts
     depends_on:
       db:
         condition: service_healthy
@@ -55,7 +56,7 @@ services:
     env_file:
       - ./.env.docker
     environment:
-      VITE_API_BASE: ${VITE_API_BASE:-/api}
+      VITE_API_BASE: ${VITE_API_BASE:-}
       VITE_API_PROXY_TARGET: ${VITE_API_PROXY_TARGET:-http://backend:8000}
       VITE_PORT: ${FRONTEND_PORT:-5173}
     command: ["yarn", "dev", "--host", "0.0.0.0", "--port", "${FRONTEND_PORT:-5173}"]
@@ -68,7 +69,7 @@ services:
     ports:
       - "${FRONTEND_HOST_PORT:-5174}:${FRONTEND_PORT:-5173}"
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:${FRONTEND_PORT:-5173} || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:${FRONTEND_PORT:-5173}/ || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -79,7 +80,7 @@ services:
     restart: unless-stopped
     depends_on:
       frontend:
-        condition: service_started
+        condition: service_healthy
       backend:
         condition: service_healthy
     volumes:

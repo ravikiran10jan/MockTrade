@@ -1,10 +1,15 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import { usePermissions } from "../hooks/usePermissions";
 import OrderEntry from "./OrderEntry";
 import StaticDataModule from "./modules/StaticDataModule";
 import MarketDataModule from "./modules/MarketDataModule";
 import EnrichmentModule from "./modules/EnrichmentModule";
 import TradeModule from "./modules/TradeModule";
+import TradeQueryModule from "./modules/TradeQueryModule";
 import ConfirmationMonitor from "./modules/ConfirmationMonitor";
+import SettlementMonitor from "./modules/SettlementMonitor";
+import AccountingModule from "./modules/AccountingModule";
 import SecurityModule from "./modules/SecurityModule";
 import "./TradingDashboard.css";
 
@@ -44,9 +49,74 @@ class ErrorBoundary extends React.Component {
 }
 
 function TradingDashboard() {
+  const { user, logout } = useAuth();
+  const { hasAnyPermission } = usePermissions();
   const [activeTab, setActiveTab] = useState("orders");
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
+  const [availableModules, setAvailableModules] = useState([]);
+
+  // Define all modules with their names for permission checking
+  const allModules = [
+    { id: "orders", label: "Order Entry", moduleName: "OrderEntry" },
+    { id: "enrichment", label: "Enrichment", moduleName: "Enrichment" },
+    { id: "trades", label: "Trade Query", moduleName: "Trade" },
+    { id: "confirmations", label: "Confirmations", moduleName: "Confirmations" },
+    { id: "settlement", label: "Settlement Monitor", moduleName: "Settlements" },
+    { id: "accounting", label: "Accounting", moduleName: "Accounting" },
+    { id: "static", label: "Static Data", moduleName: "StaticData" },
+    { id: "market", label: "Market Data", moduleName: "MarketData" },
+    { id: "security", label: "Security", moduleName: "Security" }
+  ];
+
+  // Check which modules the user has access to
+  useEffect(() => {
+    const checkModuleAccess = async () => {
+      // ADMIN users have access to all modules
+      if (user?.role === "ADMIN") {
+        setAvailableModules(allModules);
+        return;
+      }
+      
+      // For VIEWER users, show all modules except Security
+      // VIEWER users should see all modules in navigation except Security module
+      if (user?.role === "VIEWER") {
+        // Filter out Security module for VIEWER users
+        const viewerModules = allModules.filter(module => module.id !== "security");
+        setAvailableModules(viewerModules);
+        return;
+      }
+      
+      // For other users, check READ permissions for all modules except Security
+      const accessibleModules = [];
+      for (const module of allModules) {
+        // Special case: Security module should only be accessible to users with Security module access
+        if (module.id === "security") {
+          const hasAccess = await hasAnyPermission(module.moduleName);
+          if (hasAccess) {
+            accessibleModules.push(module);
+          }
+        } else {
+          // For other users, check READ permission
+          const hasAccess = await hasAnyPermission(module.moduleName);
+          if (hasAccess) {
+            accessibleModules.push(module);
+          }
+        }
+      }
+      
+      setAvailableModules(accessibleModules);
+      
+      // Set default active tab to first available module if current tab is not accessible
+      if (accessibleModules.length > 0 && !accessibleModules.some(m => m.id === activeTab)) {
+        setActiveTab(accessibleModules[0].id);
+      }
+    };
+    
+    if (user) {
+      checkModuleAccess();
+    }
+  }, [user, hasAnyPermission]);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -59,25 +129,19 @@ function TradingDashboard() {
       case "enrichment":
         return <EnrichmentModule />;
       case "trades":
-        return <TradeModule />;
+        return <TradeQueryModule />;
       case "confirmations":
         return <ConfirmationMonitor />;
+      case "settlement":
+        return <SettlementMonitor />;
+      case "accounting":
+        return <AccountingModule />;
       case "security":
         return <SecurityModule />;
       default:
         return <div style={{ padding: 20 }}>Module not available</div>;
     }
   };
-
-  const modules = [
-    { id: "orders", label: "Order Entry" },
-    { id: "confirmations", label: "Confirmations" },
-    { id: "static", label: "Static Data" },
-    { id: "market", label: "Market Data" },
-    { id: "enrichment", label: "Enrichment" },
-    { id: "trades", label: "Trade Module" },
-    { id: "security", label: "Security" }
-  ];
 
   return (
     <div style={{
@@ -99,7 +163,9 @@ function TradingDashboard() {
         alignItems: "center",
         paddingLeft: "240px",
         zIndex: 100,
-        boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+        boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+        justifyContent: "space-between",
+        paddingRight: "20px"
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <div style={{
@@ -140,7 +206,56 @@ function TradingDashboard() {
             Trading Terminal
           </div>
           {/* Active module label for debugging */}
-          <div style={{ marginLeft: 20, fontSize: 12, color: '#6b7280' }}>Active: <strong>{modules.find(m => m.id === activeTab)?.label}</strong></div>
+          <div style={{ marginLeft: 20, fontSize: 12, color: '#6b7280' }}>Active: <strong>{availableModules.find(m => m.id === activeTab)?.label}</strong></div>
+        </div>
+        
+        {/* User Info and Logout */}
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            padding: "6px 12px",
+            backgroundColor: "#f9fafb",
+            borderRadius: "20px",
+            border: "1px solid #e5e7eb"
+          }}>
+            <div style={{
+              width: "24px",
+              height: "24px",
+              borderRadius: "50%",
+              backgroundColor: "#1d4ed8",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "white",
+              fontSize: "12px",
+              fontWeight: "600"
+            }}>
+              {user?.name?.charAt(0) || 'U'}
+            </div>
+            <div style={{ fontSize: "13px", fontWeight: "500", color: "#1f2933" }}>
+              {user?.name} ({user?.role})
+            </div>
+          </div>
+          <button
+            onClick={logout}
+            style={{
+              padding: "6px 12px",
+              backgroundColor: "#ef4444",
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontSize: "13px",
+              fontWeight: "500",
+              transition: "background-color 0.2s"
+            }}
+            onMouseEnter={(e) => e.target.style.backgroundColor = "#dc2626"}
+            onMouseLeave={(e) => e.target.style.backgroundColor = "#ef4444"}
+          >
+            Logout
+          </button>
         </div>
       </div>
 
@@ -173,7 +288,7 @@ function TradingDashboard() {
           </p>
 
           <nav style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
-            {modules.map((module) => (
+            {availableModules.map((module) => (
               <button
                 key={module.id}
                 onClick={() => setActiveTab(module.id)}
@@ -241,9 +356,9 @@ function TradingDashboard() {
              }}>
               API Docs
              </a>
-           </p>
-         </div>
-       </div>
+          </p>
+        </div>
+      </div>
 
       {/* Main Content */}
       <div style={{
@@ -297,7 +412,7 @@ function TradingDashboard() {
 
                   <div style={{ display: "grid", gap: "10px", fontSize: "12px" }}>
                     <div>
-                      <span style={{ color: "#9ca3af", fontSize: "10px", fontWeight: "600", textTransform: "uppercase" }}>ID</span>
+                      <span style={{ color: "#9ca3af", fontSize: "10px", fontWeight: "600", textTransform: "uppercase" }}>Execution Id</span>
                       <div style={{ color: "#1f2933", fontFamily: "monospace", fontSize: "11px", marginTop: "2px" }}>
                         {selectedOrderDetails.id?.substring(0, 12)}...
                       </div>

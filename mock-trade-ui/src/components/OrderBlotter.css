@@ -1,0 +1,80 @@
+/* OrderBlotter.css (simplified & compact)
+   - Smaller fonts, reduced padding
+   - Horizontal scroll container (.order-blotter-inner) with min-width on grid to allow scrolling
+   - Keeps grid alignment and responsive collapse
+*/
+
+.order-blotter {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 6px; /* compact */
+  color: #1f2933;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* horizontal scroll wrapper */
+.order-blotter-inner {
+  overflow-x: auto; /* allows horizontal scrolling */
+  /* central place to define column sizes so header and rows align */
+  --blotter-columns: 140px 64px 84px 100px 84px 1fr 80px 72px;
+}
+
+/* Shared grid definition for header and rows */
+.order-blotter-grid {
+  display: grid;
+  grid-template-columns: var(--blotter-columns);
+  gap: 12px;
+  align-items: center;
+  min-width: 820px; /* triggers horizontal scroll on narrow viewports */
+}
+
+/* Header styling (less bold) */
+.blotter-header {
+  font-size: 10px;
+  font-weight: 600;
+  color: #6b7280;
+  padding: 6px 4px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+/* Data rows */
+.blotter-row {
+  padding: 6px 4px;
+  font-size: 12px;
+  line-height: 1.2;
+  transition: background-color 0.12s ease;
+  display: grid;
+  grid-template-columns: var(--blotter-columns);
+  gap: 12px;
+  align-items: center;
+}
+.blotter-row + .blotter-row { border-top: 1px solid #f8fafb; }
+.blotter-row:hover { background: #f6fbff; }
+
+/* Cells: compact and subtle */
+.blotter-cell { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 2px 6px; }
+.cell-symbol { font-weight: 600; } /* slightly emphasized, but not huge */
+.cell-side { text-align: center; font-weight: 600; }
+.cell-qty, .cell-price { text-align: right; font-variant-numeric: tabular-nums; }
+.cell-status { text-align: center; }
+.cell-trader { color: #6b7280; font-size: 12px; }
+.cell-time { color: #6b7280; font-size: 12px; text-align: right; }
+.cell-actions { text-align: center; }
+
+/* Secondary line for narrow screens */
+.row-secondary { display: none; grid-column: 1 / -1; margin-top: 6px; color: #6b7280; font-size: 12px; }
+
+/* Responsive: collapse less important fields under main line */
+@media (max-width: 900px) {
+  .order-blotter-grid { grid-template-columns: 1fr 64px 84px 100px; min-width: 0; }
+  .blotter-header { display: none; }
+  .row-secondary { display: block; }
+  .cell-trader, .cell-status, .cell-time, .cell-actions { display: none; }
+}
+
+@media (max-width: 420px) {
+  .order-blotter { padding: 4px; }
+  .blotter-row { padding: 4px; }
+  .order-blotter-grid { gap: 8px; }
+}

@@ -8,11 +8,13 @@ class Instrument(Base):
     # Master instrument table with only the common fields for all product types.
     instrument_id = Column(String, primary_key=True, index=True)
     symbol = Column(String, unique=True, index=True, nullable=False)
-    name = Column(String, nullable=False)  # human-friendly name
-    asset_class = Column(String)  # e.g., FX, EQUITY, FUTURE, OTC
-    instrument_type = Column(String)  # e.g., OTC_FX_FWD, FX_FUT, STRATEGY, SPOT, FUTURE
+    name = Column(String, nullable=True)  # human-friendly name
+    asset_class = Column(String, nullable=True)  # e.g., FX, EQUITY, FUTURE, OTC
+    instrument_type = Column(String, nullable=True)  # e.g., OTC_FX_FWD, FX_FUT, STRATEGY, SPOT, FUTURE
     status = Column(String, default="ACTIVE", index=True)
-    created_at = Column(TIMESTAMP, nullable=False)
+    expiry_date = Column(Date, nullable=True)
+    last_trading_date = Column(Date, nullable=True)
+    created_at = Column(TIMESTAMP, nullable=True)
 
     # Flexible JSON metadata for product-type specific attributes
     # Examples: settlement_conventions, strategy_legs, futures_details, multiplier, tick_size, etc.
@@ -279,9 +281,10 @@ class PortfolioEnrichmentMapping(Base):
     __tablename__ = "portfolio_enrichment_mapping"
     rule_id = Column(Integer, primary_key=True, index=True)
     source_system = Column(String, index=True, nullable=False)  # BLBG, MUREX, SUMMIT
-    trader_account_id = Column(String, index=True, nullable=False)
+    trader_id = Column(String, index=True, nullable=False)
+    account_id = Column(String, index=True, nullable=True)
     instrument_code = Column(String, nullable=True)  # blank = any instrument
-    portfolio_code = Column(String, nullable=False)
+    portfolio = Column(String, nullable=False)
     comments = Column(String, nullable=True)
     active = Column(String, default="Y", index=True)  # Y/N flag
     created_at = Column(TIMESTAMP, nullable=False)
@@ -378,4 +381,56 @@ class UserRole(Base):
     assigned_by = Column(String, nullable=True)  # User ID of who assigned this role
     status = Column(String, default="ACTIVE", index=True)  # ACTIVE, INACTIVE
     created_at = Column(TIMESTAMP, nullable=False)
+
+
+class Counterparty(Base):
+    """Master counterparty / client / broker table for static data"""
+    __tablename__ = "counterparty"
+    counterparty_code = Column(String, primary_key=True, index=True)
+    full_legal_name = Column(String, nullable=False)
+    short_name = Column(String, nullable=True)
+    customer_type = Column(String, nullable=False)  # Internal / External
+    category = Column(String, nullable=True)  # Bank, Broker, Client, Clearing House, Custodian, Other
+    business_roles_json = Column(JSON, nullable=True)  # list of roles
+
+    # Legal & Address
+    country_of_incorporation = Column(String, nullable=True)
+    lei = Column(String, nullable=True)
+    registered_address_json = Column(JSON, nullable=True)
+    operational_address_json = Column(JSON, nullable=True)
+    tax_id = Column(String, nullable=True)
+    registration_number = Column(String, nullable=True)
+
+    # Contacts
+    primary_contact_json = Column(JSON, nullable=True)
+    secondary_contact_json = Column(JSON, nullable=True)
+    swift_bic = Column(String, nullable=True)
+
+    # Bank & Settlement
+    bank_details_json = Column(JSON, nullable=True)
+    settlement_instructions = Column(String, nullable=True)
+    default_settlement_account = Column(String, nullable=True)  # Y/N
+
+    # Relationships & grouping
+    parent_entity = Column(String, nullable=True)
+    counterparty_group = Column(String, nullable=True)
+    intercompany_group = Column(String, nullable=True)
+    relationship_type = Column(String, nullable=True)
+
+    # Risk & limits
+    credit_rating_agency = Column(String, nullable=True)
+    credit_rating = Column(String, nullable=True)
+    internal_risk_rating = Column(String, nullable=True)
+    counterparty_limit_amount = Column(DECIMAL, nullable=True)
+    counterparty_limit_currency = Column(String, nullable=True)
+    limit_expiry_date = Column(Date, nullable=True)
+
+    # Status & control
+    status = Column(String, nullable=True)
+    authorized = Column(String, nullable=True)  # Y/N
+    account_manager = Column(String, nullable=True)
+    created_by = Column(String, nullable=True)
+    created_at = Column(TIMESTAMP, nullable=True)
+    updated_by = Column(String, nullable=True)
+    updated_at = Column(TIMESTAMP, nullable=True)
 

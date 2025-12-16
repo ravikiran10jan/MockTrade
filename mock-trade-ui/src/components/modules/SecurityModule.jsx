@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 import './SecurityModule.css';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '';
 
 const SecurityModule = () => {
+  const { getAuthHeaders } = useAuth();
   const [activeTab, setActiveTab] = useState('roles');
   const [roles, setRoles] = useState([]);
   const [permissions, setPermissions] = useState([]);
@@ -36,12 +38,12 @@ const SecurityModule = () => {
 
     try {
       const [rolesRes, permsRes, modsRes, mappingsRes, traderRes, userRolesRes] = await Promise.all([
-        fetch(`${API_BASE}/api/v1/security/roles`),
-        fetch(`${API_BASE}/api/v1/security/permissions`),
-        fetch(`${API_BASE}/api/v1/security/modules`),
-        fetch(`${API_BASE}/api/v1/security/role-permissions`),
-        fetch(`${API_BASE}/api/v1/static-data/traders`),
-        fetch(`${API_BASE}/api/v1/security/user-roles`)
+        fetch(`${API_BASE}/api/v1/security/roles`, { headers: getAuthHeaders() }),
+        fetch(`${API_BASE}/api/v1/security/permissions`, { headers: getAuthHeaders() }),
+        fetch(`${API_BASE}/api/v1/security/modules`, { headers: getAuthHeaders() }),
+        fetch(`${API_BASE}/api/v1/security/role-permissions`, { headers: getAuthHeaders() }),
+        fetch(`${API_BASE}/api/v1/static-data/traders`, { headers: getAuthHeaders() }),
+        fetch(`${API_BASE}/api/v1/security/user-roles`, { headers: getAuthHeaders() })
       ]);
 
       if (!rolesRes.ok) throw new Error('Failed to fetch roles');
@@ -82,7 +84,7 @@ const SecurityModule = () => {
     try {
       const response = await fetch(`${API_BASE}/api/v1/security/roles`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(newRole)
       });
 
@@ -112,7 +114,7 @@ const SecurityModule = () => {
     try {
       const response = await fetch(`${API_BASE}/api/v1/security/permissions`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(newPermission)
       });
 
@@ -142,7 +144,7 @@ const SecurityModule = () => {
     try {
       const response = await fetch(`${API_BASE}/api/v1/security/modules`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(newModule)
       });
 
@@ -172,7 +174,7 @@ const SecurityModule = () => {
     try {
       const response = await fetch(`${API_BASE}/api/v1/security/role-permissions`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(newMapping)
       });
 
@@ -202,7 +204,7 @@ const SecurityModule = () => {
     try {
       const response = await fetch(`${API_BASE}/api/v1/security/user-roles`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(newUserRole)
       });
 
@@ -227,7 +229,8 @@ const SecurityModule = () => {
 
     try {
       const response = await fetch(`${API_BASE}/api/v1/security/roles/${roleId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: getAuthHeaders()
       });
 
       if (!response.ok) throw new Error('Failed to delete role');
@@ -246,7 +249,8 @@ const SecurityModule = () => {
 
     try {
       const response = await fetch(`${API_BASE}/api/v1/security/user-roles/${userRoleId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: getAuthHeaders()
       });
 
       if (!response.ok) throw new Error('Failed to delete user role');
@@ -264,13 +268,31 @@ const SecurityModule = () => {
     setSelectedUser(userId);
 
     try {
-      const response = await fetch(`${API_BASE}/api/v1/security/user-roles/${userId}`);
+      const response = await fetch(`${API_BASE}/api/v1/security/user-roles/${userId}`, {
+        headers: getAuthHeaders()
+      });
       if (response.ok) {
         const data = await response.json();
         setUserPermissions(data);
       }
     } catch {
       setError('Failed to fetch user permissions');
+    }
+  };
+
+  // Check if user has specific permission for a module
+  const checkUserPermission = async (userId, moduleName, permissionType) => {
+    try {
+      const response = await fetch(`${API_BASE}/api/v1/security/check-permission/${userId}/${moduleName}/${permissionType}`, {
+        headers: getAuthHeaders()
+      });
+      if (response.ok) {
+        const data = await response.json();
+        return data.has_permission;
+      }
+      return false;
+    } catch {
+      return false;
     }
   };
 
@@ -376,39 +398,41 @@ const SecurityModule = () => {
             {roles.length === 0 ? (
               <p className="empty-state">No roles found</p>
             ) : (
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Role Name</th>
-                    <th>Description</th>
-                    <th>Status</th>
-                    <th>Created</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {roles.map((role) => (
-                    <tr key={role.role_id}>
-                      <td className="role-name">{role.role_name}</td>
-                      <td>{role.description || '-'}</td>
-                      <td>
-                        <span className={`badge badge-${role.status.toLowerCase()}`}>
-                          {role.status}
-                        </span>
-                      </td>
-                      <td>{new Date(role.created_at).toLocaleDateString()}</td>
-                      <td>
-                        <button
-                          className="btn btn-small btn-danger"
-                          onClick={() => handleDeleteRole(role.role_id)}
-                        >
-                          Delete
-                        </button>
-                      </td>
+              <div className="scrollable-list">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Role Name</th>
+                      <th>Description</th>
+                      <th>Status</th>
+                      <th>Created</th>
+                      <th>Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {roles.map((role) => (
+                      <tr key={role.role_id}>
+                        <td className="role-name">{role.role_name}</td>
+                        <td>{role.description || '-'}</td>
+                        <td>
+                          <span className={`badge badge-${role.status.toLowerCase()}`}>
+                            {role.status}
+                          </span>
+                        </td>
+                        <td>{new Date(role.created_at).toLocaleDateString()}</td>
+                        <td>
+                          <button
+                            className="btn btn-small btn-danger"
+                            onClick={() => handleDeleteRole(role.role_id)}
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </div>
@@ -447,30 +471,32 @@ const SecurityModule = () => {
             {permissions.length === 0 ? (
               <p className="empty-state">No permissions found</p>
             ) : (
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Permission Name</th>
-                    <th>Description</th>
-                    <th>Status</th>
-                    <th>Created</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {permissions.map((perm) => (
-                    <tr key={perm.permission_id}>
-                      <td className="permission-name">{perm.permission_name}</td>
-                      <td>{perm.description || '-'}</td>
-                      <td>
-                        <span className={`badge badge-${perm.status.toLowerCase()}`}>
-                          {perm.status}
-                        </span>
-                      </td>
-                      <td>{new Date(perm.created_at).toLocaleDateString()}</td>
+              <div className="scrollable-list">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Permission Name</th>
+                      <th>Description</th>
+                      <th>Status</th>
+                      <th>Created</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {permissions.map((perm) => (
+                      <tr key={perm.permission_id}>
+                        <td className="permission-name">{perm.permission_name}</td>
+                        <td>{perm.description || '-'}</td>
+                        <td>
+                          <span className={`badge badge-${perm.status.toLowerCase()}`}>
+                            {perm.status}
+                          </span>
+                        </td>
+                        <td>{new Date(perm.created_at).toLocaleDateString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </div>
@@ -566,12 +592,15 @@ const SecurityModule = () => {
                     onChange={(e) => setNewMapping({ ...newMapping, module_id: e.target.value })}
                   >
                     <option value="">Select Module</option>
-                    {modules.map((mod) => (
-                      <option key={mod.module_id} value={mod.module_id}>
-                        {mod.module_name}
-                      </option>
-                    ))}
+                    {modules
+                      .filter(mod => mod.module_name !== 'All')
+                      .map((mod) => (
+                        <option key={mod.module_id} value={mod.module_id}>
+                          {mod.module_name}
+                        </option>
+                      ))}
                   </select>
+                  <p className="form-help-text">Note: Select "All" module only for global permissions</p>
                 </div>
                 <div className="form-group">
                   <label>Permission</label>
@@ -586,6 +615,10 @@ const SecurityModule = () => {
                       </option>
                     ))}
                   </select>
+                  <div className="permission-explanation">
+                    <p><strong>READ</strong>: View-only access</p>
+                    <p><strong>READ_WRITE</strong>: Full access (view and edit)</p>
+                  </div>
                 </div>
               </div>
               <button type="submit" className="btn btn-primary">Create Mapping</button>
@@ -597,32 +630,34 @@ const SecurityModule = () => {
             {rolePermissions.length === 0 ? (
               <p className="empty-state">No mappings found</p>
             ) : (
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Role</th>
-                    <th>Module</th>
-                    <th>Permission</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rolePermissions.map((mapping) => (
-                    <tr key={mapping.mapping_id}>
-                      <td>{mapping.role_name}</td>
-                      <td>{mapping.module_name}</td>
-                      <td>
-                        <span className="permission-badge">{mapping.permission_name}</span>
-                      </td>
-                      <td>
-                        <span className={`badge badge-${mapping.status.toLowerCase()}`}>
-                          {mapping.status}
-                        </span>
-                      </td>
+              <div className="scrollable-list">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Role</th>
+                      <th>Module</th>
+                      <th>Permission</th>
+                      <th>Status</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {rolePermissions.map((mapping) => (
+                      <tr key={mapping.mapping_id}>
+                        <td>{mapping.role_name}</td>
+                        <td>{mapping.module_name}</td>
+                        <td>
+                          <span className="permission-badge">{mapping.permission_name}</span>
+                        </td>
+                        <td>
+                          <span className={`badge badge-${mapping.status.toLowerCase()}`}>
+                            {mapping.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </div>
@@ -727,31 +762,41 @@ const SecurityModule = () => {
             {selectedUser && userPermissions.length > 0 && (
               <div className="user-permissions-summary">
                 <h3>{getTraderName(selectedUser)} Permissions</h3>
-                {userPermissions.map((up) => (
-                  <div key={`${up.role_id}`} className="role-section">
-                    <h4>Role: {up.role_name}</h4>
-                    <table className="permissions-table">
-                      <thead>
-                        <tr>
-                          <th>Module</th>
-                          <th>Permission</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {up.permissions.map((perm, idx) => (
-                          <tr key={idx}>
-                            <td>{perm.module_name}</td>
-                            <td>
-                              <span className={`permission-badge ${perm.permission_name.toLowerCase()}`}>
-                                {perm.permission_name}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                <div className="permissions-grid">
+                  <div className="module-grid-header">
+                    <div className="module-name">Module</div>
+                    <div className="permission-status">READ</div>
+                    <div className="permission-status">READ_WRITE</div>
                   </div>
-                ))}
+                  {modules
+                    .filter(mod => mod.module_name !== 'All')
+                    .map((module) => {
+                      // Find permissions for this module across all user roles
+                      const modulePermissions = userPermissions.flatMap(up => 
+                        up.permissions.filter(p => p.module_name === module.module_name)
+                      );
+                      
+                      const hasRead = modulePermissions.some(p => p.permission_name === 'READ');
+                      const hasReadWrite = modulePermissions.some(p => p.permission_name === 'READ_WRITE');
+                      
+                      return (
+                        <div key={module.module_id} className="module-permission-row">
+                          <div className="module-name">{module.module_name}</div>
+                          <div className="permission-status">
+                            <span className={`permission-indicator ${hasRead ? 'has-permission' : 'no-permission'}`}>
+                              {hasRead ? '✓' : '✗'}
+                            </span>
+                          </div>
+                          <div className="permission-status">
+                            <span className={`permission-indicator ${hasReadWrite ? 'has-permission' : 'no-permission'}`}>
+                              {hasReadWrite ? '✓' : '✗'}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })
+                  }
+                </div>
               </div>
             )}
 
@@ -766,4 +811,3 @@ const SecurityModule = () => {
 };
 
 export default SecurityModule;
-

@@ -13,6 +13,8 @@ class InstrumentSchema(BaseSchema):
     asset_class: Optional[str] = None
     instrument_type: Optional[str] = None
     status: str = "ACTIVE"
+    expiry_date: Optional[date] = None
+    last_trading_date: Optional[date] = None
     created_at: Optional[datetime] = None
     # Metadata is returned from metadata_json column for backward compatibility
     metadata: Optional[Dict[str, Any]] = None
@@ -24,6 +26,8 @@ class InstrumentCreateSchema(BaseSchema):
     asset_class: Optional[str] = None
     instrument_type: Optional[str] = None
     status: str = "ACTIVE"
+    expiry_date: Optional[date] = None
+    last_trading_date: Optional[date] = None
     # Client sends metadata; backend maps to metadata_json column
     metadata: Optional[Dict[str, Any]] = None
 

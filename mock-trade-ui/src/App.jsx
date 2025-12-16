@@ -1,4 +1,7 @@
 import React, { Suspense } from 'react';
+import { AuthProvider } from './contexts/AuthContext.jsx';
+import ProtectedRoute from './components/ProtectedRoute';
+import Login from './components/Login';
 import './components/_blotter_override.css';
 
 const TradingDashboard = React.lazy(() => import('./components/TradingDashboard'));
@@ -57,9 +60,13 @@ class ErrorBoundary extends React.Component {
     }
 
     return (
-      <Suspense fallback={<div style={{ padding: '40px', fontSize: '18px' }}>Loading...</div>}>
-        <TradingDashboard />
-      </Suspense>
+      <AuthProvider>
+        <ProtectedRoute>
+          <Suspense fallback={<div style={{ padding: '40px', fontSize: '18px' }}>Loading...</div>}>
+            <TradingDashboard />
+          </Suspense>
+        </ProtectedRoute>
+      </AuthProvider>
     );
   }
 }

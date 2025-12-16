@@ -7,7 +7,7 @@ import logging
 # Configure logging
 logger = logging.getLogger(__name__)
 
-# Prefer DATABASE_URL (Postgres) when provided, otherwise fall back to a local sqlite DB
+# Require DATABASE_URL (Postgres) — do not fall back to SQLite
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
 
 logger.info("=" * 80)
@@ -15,15 +15,14 @@ logger.info("DATABASE CONFIGURATION")
 logger.info(f"DATABASE_URL env var: {os.getenv('DATABASE_URL', 'NOT SET')}")
 
 if not SQLALCHEMY_DATABASE_URL:
-    # Local dev fallback so server can start without Postgres
-    SQLALCHEMY_DATABASE_URL = "sqlite:///./dev.db"
-    logger.warning("DATABASE: No DATABASE_URL set! Using SQLite: sqlite:///./dev.db")
-    logger.warning("DATABASE: To use PostgreSQL, set: export DATABASE_URL='postgresql://postgres:postgres@localhost:5432/mocktrade'")
-    # SQLite needs a special connect arg for multithreaded apps
-    engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
-else:
-    logger.info(f"DATABASE: Using PostgreSQL connection: {SQLALCHEMY_DATABASE_URL}")
-    engine = create_engine(SQLALCHEMY_DATABASE_URL)
+    logger.error("DATABASE: No DATABASE_URL set! The application requires a PostgreSQL DATABASE_URL and will not start without it.")
+    logger.error("Set the environment variable DATABASE_URL, for example:")
+    logger.error("export DATABASE_URL='postgresql://postgres:mock1234@localhost:5432/mocktrade'")
+    raise RuntimeError("Missing required environment variable: DATABASE_URL (Postgres connection string)")
+
+# Create SQLAlchemy engine using the provided DATABASE_URL
+logger.info(f"DATABASE: Using connection: {SQLALCHEMY_DATABASE_URL}")
+engine = create_engine(SQLALCHEMY_DATABASE_URL)
 
 logger.info(f"Connecting to DB at: {SQLALCHEMY_DATABASE_URL}")
 logger.info("=" * 80)

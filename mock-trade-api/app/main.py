@@ -27,6 +27,8 @@ from app.modules.market_data import routes as market_data_routes
 from app.modules.enrichment import routes as enrichment_routes
 from app.modules.trade import routes as trade_routes
 from app.modules.security import routes as security_routes
+from app.modules.auth import routes as auth_routes
+from app.modules.trade_query import routes as trade_query_routes
 
 app = FastAPI(
     title="MockTrade API",
@@ -70,6 +72,10 @@ logger.info("Registering trade routes...")
 app.include_router(trade_routes.router)
 logger.info("Registering security routes...")
 app.include_router(security_routes.router)
+logger.info("Registering auth routes...")
+app.include_router(auth_routes.router)
+logger.info("Registering trade query routes...")
+app.include_router(trade_query_routes.router)
 
 logger.info("All routes registered successfully")
 
@@ -85,6 +91,7 @@ def root():
             "market-data",
             "enrichment",
             "trades",
+            "trade-query",
             "security"
         ]
     }
@@ -149,6 +156,13 @@ def list_modules():
                     "POST /api/v1/trades/{trade_id}/cancel",
                     "POST /api/v1/trades/{trade_id}/expire",
                     "POST /api/v1/trades/{trade_id}/allocate"
+                ]
+            },
+            "trade_query": {
+                "description": "Trade query and enrichment",
+                "endpoints": [
+                    "GET /api/v1/trade-query/enriched-trades",
+                    "GET /api/v1/trade-query/enriched-orders"
                 ]
             }
         }

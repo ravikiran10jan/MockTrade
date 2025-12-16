@@ -6,20 +6,35 @@ from sqlalchemy import pool
 from alembic import context
 
 
-# Import your models
-from app.database import Base, SQLALCHEMY_DATABASE_URL
+# Import your models and database URL from the application so Alembic uses the same DB as the app.
+try:
+    from app.database import Base, SQLALCHEMY_DATABASE_URL
+except Exception as _err:
+    # If importing app.database fails (e.g., missing env var), show a clear error and re-raise.
+    raise RuntimeError(
+        "Failed to import app.database. Ensure the application environment is configured and the DATABASE_URL env var is set."
+    )
+
 from app.models import Instrument, OrderHdr, TradeHdr
 
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
+
+# Set sqlalchemy.url in the Alembic config from the application's DATABASE_URL
+# This ensures Alembic connects to the same Postgres database as the running app.
+if not SQLALCHEMY_DATABASE_URL:
+    raise RuntimeError("app.database.SQLALCHEMY_DATABASE_URL is empty. Set the DATABASE_URL environment variable.")
+
 config.set_main_option("sqlalchemy.url", SQLALCHEMY_DATABASE_URL)
 
-# Interpret the config file for Python logging.
-# This line sets up loggers basically.
+# Log which DB URL Alembic will use (be careful: this may expose credentials in logs).
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
+
+import logging
+logging.getLogger('alembic.env').info(f"Alembic will use DATABASE_URL={SQLALCHEMY_DATABASE_URL}")
 
 # add your model's MetaData object here
 # for 'autogenerate' support

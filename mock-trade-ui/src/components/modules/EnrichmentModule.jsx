@@ -1,16 +1,53 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
+import { usePermissions } from '../../hooks/usePermissions';
 
 const FONT_FAMILY = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
 
 function EnrichmentModule() {
+  const { getAuthHeaders, user } = useAuth();
+  const { canEditModule, canViewModule } = usePermissions();
+  
+  // For ADMIN users, always allow access regardless of module permissions
+  const isAdmin = user?.role === "ADMIN";
   const [enrichmentTab, setEnrichmentTab] = useState("portfolio"); // portfolio or trader
   const [message, setMessage] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
+  const [hasEditPermission, setHasEditPermission] = useState(false);
+  const [hasViewPermission, setHasViewPermission] = useState(true);
+  const [permissionChecked, setPermissionChecked] = useState(false);
+  const [permissionMessage, setPermissionMessage] = useState("");
+
+  // Check permissions when component mounts
+  useEffect(() => {
+    const checkPermissions = async () => {
+      try {
+        const canView = isAdmin || await canViewModule("Enrichment");
+        const canEdit = isAdmin || await canEditModule("Enrichment");
+        
+        setHasViewPermission(canView);
+        setHasEditPermission(canEdit);
+        setPermissionChecked(true);
+        
+        if (!canView) {
+          setPermissionMessage("You don't have permission to access the Enrichment module.");
+        } else if (!canEdit && !isAdmin) {
+          setPermissionMessage("You have read-only access to the Enrichment module.");
+        }
+      } catch (error) {
+        console.error('Error checking permissions:', error);
+        setPermissionMessage("Error checking permissions.");
+        setPermissionChecked(true);
+      }
+    };
+
+    checkPermissions();
+  }, [canViewModule, canEditModule]);
 
   // Example Trader Enrichment Mappings - Maps external trader UUIDs to internal IDs
-  const [traderMappings, setTraderMappings] = useState([
+  const [traderMappings, _setTraderMappings] = useState([
     {
       rule_id: 2001,
       source_system: "MUREX",
@@ -94,7 +131,7 @@ function EnrichmentModule() {
   ]);
 
   // Broker Enrichment Mappings
-  const [brokerMappings, setBrokerMappings] = useState([
+  const [brokerMappings, _setBrokerMappings] = useState([
     {
       rule_id: 3001,
       source_system: "BLBG",
@@ -188,7 +225,7 @@ function EnrichmentModule() {
   ]);
 
   // Clearer Enrichment Mappings
-  const [clearerMappings, setClearerMappings] = useState([
+  const [clearerMappings, _setClearerMappings] = useState([
     {
       rule_id: 4001,
       source_system: "BLBG",
@@ -281,15 +318,15 @@ function EnrichmentModule() {
     }
   ]);
 
-  // ...existing code...
   const [portfolioMappings, setPortfolioMappings] = useState([
     {
       rule_id: 1001,
       rule_type: "PORTFOLIO",
       source_system: "BLBG",
-      trader_account_id: "TRADER_001_FX",
+      trader_id: "TRADER_001_FX",
+      account_id: null,
       instrument_code: "EURUSD",
-      portfolio_code: "PORT_FX_EU_001",
+      portfolio: "PORT_FX_EU_001",
       comments: "Bloomberg FX desk EUR/USD spot trades",
       active: true
     },
@@ -297,9 +334,10 @@ function EnrichmentModule() {
       rule_id: 1002,
       rule_type: "PORTFOLIO",
       source_system: "BLBG",
-      trader_account_id: "TRADER_001_FX",
+      trader_id: "TRADER_001_FX",
+      account_id: null,
       instrument_code: "GBPUSD",
-      portfolio_code: "PORT_FX_GB_001",
+      portfolio: "PORT_FX_GB_001",
       comments: "Bloomberg FX desk GBP/USD spot trades",
       active: true
     },
@@ -307,9 +345,10 @@ function EnrichmentModule() {
       rule_id: 1003,
       rule_type: "PORTFOLIO",
       source_system: "BLBG",
-      trader_account_id: "TRADER_001_FX",
+      trader_id: "TRADER_001_FX",
+      account_id: null,
       instrument_code: "",
-      portfolio_code: "PORT_FX_OTHER_001",
+      portfolio: "PORT_FX_OTHER_001",
       comments: "Bloomberg FX desk - any other currency pairs",
       active: true
     },
@@ -317,9 +356,10 @@ function EnrichmentModule() {
       rule_id: 1004,
       rule_type: "PORTFOLIO",
       source_system: "MUREX",
-      trader_account_id: "DESK_RATES_APAC",
+      trader_id: "DESK_RATES_APAC",
+      account_id: null,
       instrument_code: "IRS_JPY_5Y",
-      portfolio_code: "PORT_RATES_JPY_APAC",
+      portfolio: "PORT_RATES_JPY_APAC",
       comments: "Murex rates desk - JPY 5Y IRS from APAC",
       active: true
     },
@@ -327,9 +367,10 @@ function EnrichmentModule() {
       rule_id: 1005,
       rule_type: "PORTFOLIO",
       source_system: "MUREX",
-      trader_account_id: "DESK_RATES_APAC",
+      trader_id: "DESK_RATES_APAC",
+      account_id: null,
       instrument_code: "IRS_AUD_10Y",
-      portfolio_code: "PORT_RATES_AUD_APAC",
+      portfolio: "PORT_RATES_AUD_APAC",
       comments: "Murex rates desk - AUD 10Y IRS from APAC",
       active: true
     },
@@ -337,9 +378,10 @@ function EnrichmentModule() {
       rule_id: 1006,
       rule_type: "PORTFOLIO",
       source_system: "MUREX",
-      trader_account_id: "DESK_RATES_EMEA",
+      trader_id: "DESK_RATES_EMEA",
+      account_id: null,
       instrument_code: "IRS_EUR_2Y",
-      portfolio_code: "PORT_RATES_EUR_EMEA",
+      portfolio: "PORT_RATES_EUR_EMEA",
       comments: "Murex rates desk - EUR 2Y IRS from EMEA",
       active: true
     },
@@ -347,9 +389,10 @@ function EnrichmentModule() {
       rule_id: 1007,
       rule_type: "PORTFOLIO",
       source_system: "MUREX",
-      trader_account_id: "DESK_RATES_EMEA",
+      trader_id: "DESK_RATES_EMEA",
+      account_id: null,
       instrument_code: "IRS_EUR_10Y",
-      portfolio_code: "PORT_RATES_EUR_LONG_EMEA",
+      portfolio: "PORT_RATES_EUR_LONG_EMEA",
       comments: "Murex rates desk - EUR long-dated IRS from EMEA",
       active: true
     },
@@ -357,9 +400,10 @@ function EnrichmentModule() {
       rule_id: 1008,
       rule_type: "PORTFOLIO",
       source_system: "MUREX",
-      trader_account_id: "DESK_RATES_EMEA",
+      trader_id: "DESK_RATES_EMEA",
+      account_id: null,
       instrument_code: "",
-      portfolio_code: "PORT_RATES_OTHER_EMEA",
+      portfolio: "PORT_RATES_OTHER_EMEA",
       comments: "Murex rates desk - any other instruments",
       active: true
     },
@@ -367,9 +411,10 @@ function EnrichmentModule() {
       rule_id: 1009,
       rule_type: "PORTFOLIO",
       source_system: "SUMMIT",
-      trader_account_id: "EQUITY_DESK_NA",
+      trader_id: "EQUITY_DESK_NA",
+      account_id: null,
       instrument_code: "SPX",
-      portfolio_code: "PORT_EQ_SPX_NA",
+      portfolio: "PORT_EQ_SPX_NA",
       comments: "Summit equity desk - S&P 500 index",
       active: true
     },
@@ -377,9 +422,10 @@ function EnrichmentModule() {
       rule_id: 1010,
       rule_type: "PORTFOLIO",
       source_system: "SUMMIT",
-      trader_account_id: "EQUITY_DESK_NA",
+      trader_id: "EQUITY_DESK_NA",
+      account_id: null,
       instrument_code: "NDX",
-      portfolio_code: "PORT_EQ_NDX_NA",
+      portfolio: "PORT_EQ_NDX_NA",
       comments: "Summit equity desk - NASDAQ 100 index",
       active: true
     },
@@ -387,9 +433,10 @@ function EnrichmentModule() {
       rule_id: 1011,
       rule_type: "PORTFOLIO",
       source_system: "SUMMIT",
-      trader_account_id: "EQUITY_DESK_EMEA",
+      trader_id: "EQUITY_DESK_EMEA",
+      account_id: null,
       instrument_code: "STOXX600",
-      portfolio_code: "PORT_EQ_STOXX_EMEA",
+      portfolio: "PORT_EQ_STOXX_EMEA",
       comments: "Summit equity desk - STOXX 600 European index",
       active: true
     },
@@ -397,9 +444,10 @@ function EnrichmentModule() {
       rule_id: 1012,
       rule_type: "PORTFOLIO",
       source_system: "SUMMIT",
-      trader_account_id: "EQUITY_DESK_EMEA",
+      trader_id: "EQUITY_DESK_EMEA",
+      account_id: null,
       instrument_code: "FTSE100",
-      portfolio_code: "PORT_EQ_FTSE_EMEA",
+      portfolio: "PORT_EQ_FTSE_EMEA",
       comments: "Summit equity desk - FTSE 100 UK index",
       active: false
     },
@@ -407,9 +455,10 @@ function EnrichmentModule() {
       rule_id: 1013,
       rule_type: "PORTFOLIO",
       source_system: "BLBG",
-      trader_account_id: "TRADER_002_FIXED",
+      trader_id: "TRADER_002_FIXED",
+      account_id: null,
       instrument_code: "US_BOND_10Y",
-      portfolio_code: "PORT_BONDS_US_10Y",
+      portfolio: "PORT_BONDS_US_10Y",
       comments: "Bloomberg fixed income desk - US 10Y Treasury",
       active: true
     },
@@ -417,9 +466,10 @@ function EnrichmentModule() {
       rule_id: 1014,
       rule_type: "PORTFOLIO",
       source_system: "BLBG",
-      trader_account_id: "TRADER_002_FIXED",
+      trader_id: "TRADER_002_FIXED",
+      account_id: null,
       instrument_code: "US_BOND_5Y",
-      portfolio_code: "PORT_BONDS_US_5Y",
+      portfolio: "PORT_BONDS_US_5Y",
       comments: "Bloomberg fixed income desk - US 5Y Treasury",
       active: true
     },
@@ -427,9 +477,10 @@ function EnrichmentModule() {
       rule_id: 1015,
       rule_type: "PORTFOLIO",
       source_system: "BLBG",
-      trader_account_id: "TRADER_002_FIXED",
+      trader_id: "TRADER_002_FIXED",
+      account_id: null,
       instrument_code: "",
-      portfolio_code: "PORT_BONDS_OTHER",
+      portfolio: "PORT_BONDS_OTHER",
       comments: "Bloomberg fixed income desk - other bonds/credits",
       active: true
     },
@@ -437,9 +488,10 @@ function EnrichmentModule() {
       rule_id: 1016,
       rule_type: "PORTFOLIO",
       source_system: "MUREX",
-      trader_account_id: "COMMODITIES_DESK",
+      trader_id: "COMMODITIES_DESK",
+      account_id: null,
       instrument_code: "CRUDE_WTI",
-      portfolio_code: "PORT_CMDTY_WTI",
+      portfolio: "PORT_CMDTY_WTI",
       comments: "Murex commodities - WTI crude oil",
       active: true
     },
@@ -447,9 +499,10 @@ function EnrichmentModule() {
       rule_id: 1017,
       rule_type: "PORTFOLIO",
       source_system: "MUREX",
-      trader_account_id: "COMMODITIES_DESK",
+      trader_id: "COMMODITIES_DESK",
+      account_id: null,
       instrument_code: "GOLD",
-      portfolio_code: "PORT_CMDTY_GOLD",
+      portfolio: "PORT_CMDTY_GOLD",
       comments: "Murex commodities - precious metals",
       active: true
     },
@@ -457,9 +510,10 @@ function EnrichmentModule() {
       rule_id: 1018,
       rule_type: "PORTFOLIO",
       source_system: "SUMMIT",
-      trader_account_id: "VOL_DESK",
+      trader_id: "VOL_DESK",
+      account_id: null,
       instrument_code: "VIX",
-      portfolio_code: "PORT_VOL_VIX",
+      portfolio: "PORT_VOL_VIX",
       comments: "Summit volatility desk - VIX index",
       active: true
     },
@@ -467,9 +521,10 @@ function EnrichmentModule() {
       rule_id: 1019,
       rule_type: "PORTFOLIO",
       source_system: "SUMMIT",
-      trader_account_id: "VOL_DESK",
+      trader_id: "VOL_DESK",
+      account_id: null,
       instrument_code: "MOVE",
-      portfolio_code: "PORT_VOL_MOVE",
+      portfolio: "PORT_VOL_MOVE",
       comments: "Summit volatility desk - MOVE bond volatility index",
       active: true
     },
@@ -477,26 +532,34 @@ function EnrichmentModule() {
       rule_id: 1020,
       rule_type: "PORTFOLIO",
       source_system: "BLBG",
-      trader_account_id: "CREDIT_DESK",
+      trader_id: "CREDIT_DESK",
+      account_id: null,
       instrument_code: "CDS_INDEX_HY",
-      portfolio_code: "PORT_CREDIT_HY",
+      portfolio: "PORT_CREDIT_HY",
       comments: "Bloomberg credit desk - High yield CDS index",
       active: true
     }
   ]);
 
   const filteredMappings = portfolioMappings.filter(m =>
-    m.trader_account_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    m.trader_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
     m.instrument_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    m.portfolio_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    m.portfolio.toLowerCase().includes(searchTerm.toLowerCase()) ||
     m.source_system.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleCreateMapping = async (e) => {
     e.preventDefault();
+    
+    // Check if user has permission to edit
+    if (!hasEditPermission) {
+      setMessage("You don't have permission to create new mappings in Enrichment.");
+      return;
+    }
+    
     try {
-      if (!formData.source_system || !formData.trader_account_id || !formData.portfolio_code) {
-        setMessage("Error: Source system, trader account, and portfolio code are required");
+      if (!formData.source_system || !formData.trader_id || !formData.portfolio) {
+        setMessage("Error: Source system, trader ID, and portfolio are required");
         return;
       }
 
@@ -504,9 +567,10 @@ function EnrichmentModule() {
         rule_id: Math.max(...portfolioMappings.map(m => m.rule_id), 0) + 1,
         rule_type: "PORTFOLIO",
         source_system: formData.source_system,
-        trader_account_id: formData.trader_account_id,
+        trader_id: formData.trader_id,
+        account_id: formData.account_id || null,
         instrument_code: formData.instrument_code || "",
-        portfolio_code: formData.portfolio_code,
+        portfolio: formData.portfolio,
         comments: formData.comments || "",
         active: formData.active !== false
       };
@@ -522,6 +586,12 @@ function EnrichmentModule() {
   };
 
   const toggleActive = (ruleId) => {
+    // Check if user has permission to edit
+    if (!hasEditPermission) {
+      setMessage("You don't have permission to modify mappings in Enrichment.");
+      return;
+    }
+    
     setPortfolioMappings(
       portfolioMappings.map(m =>
         m.rule_id === ruleId ? { ...m, active: !m.active } : m
@@ -530,10 +600,28 @@ function EnrichmentModule() {
   };
 
   const deleteMapping = (ruleId) => {
+    // Check if user has permission to edit
+    if (!hasEditPermission) {
+      setMessage("You don't have permission to delete mappings in Enrichment.");
+      return;
+    }
+    
     setPortfolioMappings(portfolioMappings.filter(m => m.rule_id !== ruleId));
     setMessage("✓ Mapping deleted");
     setTimeout(() => setMessage(""), 3000);
   };
+
+  // If permissions haven't been checked yet, show loading
+  if (!permissionChecked) {
+    return (
+      <div style={{ fontFamily: FONT_FAMILY, padding: "20px" }}>
+        <div>Checking permissions...</div>
+      </div>
+    );
+  }
+
+  // Always show content but disable actions for users without edit permission
+  // VIEWER users should see all content but with disabled actions
 
   return (
     <div style={{ fontFamily: FONT_FAMILY }}>
@@ -555,6 +643,19 @@ function EnrichmentModule() {
         }}>
           Manage enrichment rules that map source system data to internal identifiers
         </p>
+        {permissionMessage && (
+          <div style={{
+            marginTop: "8px",
+            padding: "8px 12px",
+            backgroundColor: hasEditPermission ? "#d1fae5" : "#fef3c7",
+            color: hasEditPermission ? "#065f46" : "#78350f",
+            borderRadius: "4px",
+            border: `1px solid ${hasEditPermission ? "#a7f3d0" : "#fde68a"}`,
+            fontSize: "12px"
+          }}>
+            {permissionMessage}
+          </div>
+        )}
       </div>
 
       {/* Tab Navigation */}
@@ -646,7 +747,7 @@ function EnrichmentModule() {
         <div style={{ display: "grid", gridTemplateColumns: "220px 1fr", gap: "20px" }}>
         {/* Left Panel - Controls */}
         <div>
-          {!showForm && (
+          {!showForm && hasEditPermission && (
             <button
               onClick={() => setShowForm(true)}
               style={{
@@ -698,13 +799,13 @@ function EnrichmentModule() {
 
                 <div>
                   <label style={{ display: "block", fontSize: "11px", fontWeight: "600", color: "#4b5563", marginBottom: "4px", textTransform: "uppercase" }}>
-                    Trader/Account ID *
+                    Account *
                   </label>
                   <input
                     type="text"
-                    value={formData.trader_account_id || ""}
-                    onChange={(e) => setFormData({ ...formData, trader_account_id: e.target.value })}
-                    placeholder="e.g., TRADER_001"
+                    value={formData.trader_id || formData.trader_account_id || ""}
+                    onChange={(e) => setFormData({ ...formData, trader_id: e.target.value })}
+                    placeholder="e.g., TRADER_001 or ACC123"
                     style={{
                       width: "100%",
                       padding: "8px 10px",
@@ -744,12 +845,12 @@ function EnrichmentModule() {
 
                 <div>
                   <label style={{ display: "block", fontSize: "11px", fontWeight: "600", color: "#4b5563", marginBottom: "4px", textTransform: "uppercase" }}>
-                    Portfolio Code *
+                    Portfolio *
                   </label>
                   <input
                     type="text"
-                    value={formData.portfolio_code || ""}
-                    onChange={(e) => setFormData({ ...formData, portfolio_code: e.target.value })}
+                    value={formData.portfolio || ""}
+                    onChange={(e) => setFormData({ ...formData, portfolio: e.target.value })}
                     placeholder="e.g., PORT_FX_EU_001"
                     style={{
                       width: "100%",
@@ -888,18 +989,21 @@ function EnrichmentModule() {
                 <tr style={{ backgroundColor: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
                   <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: "700", color: "#4b5563", fontSize: "10px", textTransform: "uppercase" }}>Rule ID</th>
                   <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: "700", color: "#4b5563", fontSize: "10px", textTransform: "uppercase" }}>System</th>
-                  <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: "700", color: "#4b5563", fontSize: "10px", textTransform: "uppercase" }}>Trader/Account</th>
+                  <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: "700", color: "#4b5563", fontSize: "10px", textTransform: "uppercase" }}>Trader ID</th>
+                  <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: "700", color: "#4b5563", fontSize: "10px", textTransform: "uppercase" }}>Account ID</th>
                   <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: "700", color: "#4b5563", fontSize: "10px", textTransform: "uppercase" }}>Instrument</th>
-                  <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: "700", color: "#4b5563", fontSize: "10px", textTransform: "uppercase" }}>Portfolio Code</th>
+                  <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: "700", color: "#4b5563", fontSize: "10px", textTransform: "uppercase" }}>Portfolio</th>
                   <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: "700", color: "#4b5563", fontSize: "10px", textTransform: "uppercase" }}>Comments</th>
                   <th style={{ padding: "8px 12px", textAlign: "center", fontWeight: "700", color: "#4b5563", fontSize: "10px", textTransform: "uppercase" }}>Active</th>
-                  <th style={{ padding: "8px 12px", textAlign: "center", fontWeight: "700", color: "#4b5563", fontSize: "10px", textTransform: "uppercase" }}>Action</th>
+                  {hasEditPermission && (
+                    <th style={{ padding: "8px 12px", textAlign: "center", fontWeight: "700", color: "#4b5563", fontSize: "10px", textTransform: "uppercase" }}>Action</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
                 {filteredMappings.length === 0 ? (
                   <tr>
-                    <td colSpan="8" style={{ padding: "16px 12px", textAlign: "center", color: "#9ca3af" }}>
+                    <td colSpan={hasEditPermission ? "9" : "8"} style={{ padding: "16px 12px", textAlign: "center", color: "#9ca3af" }}>
                       No mappings found
                     </td>
                   </tr>
@@ -915,11 +1019,12 @@ function EnrichmentModule() {
                     >
                       <td style={{ padding: "8px 12px", color: "#1f2933", fontWeight: "600" }}>{mapping.rule_id}</td>
                       <td style={{ padding: "8px 12px", color: "#1f2933", fontWeight: "500" }}>{mapping.source_system}</td>
-                      <td style={{ padding: "8px 12px", color: "#4b5563" }}>{mapping.trader_account_id}</td>
+                      <td style={{ padding: "8px 12px", color: "#4b5563" }}>{mapping.trader_id}</td>
+                      <td style={{ padding: "8px 12px", color: "#4b5563" }}>{mapping.account_id || <span style={{ color: "#9ca3af", fontStyle: "italic" }}>N/A</span>}</td>
                       <td style={{ padding: "8px 12px", color: "#4b5563" }}>
                         {mapping.instrument_code || <span style={{ color: "#9ca3af", fontStyle: "italic" }}>any</span>}
                       </td>
-                      <td style={{ padding: "8px 12px", color: "#1f2933", fontWeight: "500", fontFamily: "monospace" }}>{mapping.portfolio_code}</td>
+                      <td style={{ padding: "8px 12px", color: "#1f2933", fontWeight: "500", fontFamily: "monospace" }}>{mapping.portfolio}</td>
                       <td style={{ padding: "8px 12px", color: "#6b7280", fontSize: "10px" }}>{mapping.comments}</td>
                       <td style={{ padding: "8px 12px", textAlign: "center" }}>
                         <button
@@ -932,29 +1037,33 @@ function EnrichmentModule() {
                             borderRadius: "3px",
                             fontSize: "10px",
                             fontWeight: "600",
-                            cursor: "pointer"
+                            cursor: hasEditPermission ? "pointer" : "not-allowed",
+                            opacity: hasEditPermission ? 1 : 0.5
                           }}
+                          disabled={!hasEditPermission}
                         >
                           {mapping.active ? "YES" : "NO"}
                         </button>
                       </td>
-                      <td style={{ padding: "8px 12px", textAlign: "center" }}>
-                        <button
-                          onClick={() => deleteMapping(mapping.rule_id)}
-                          style={{
-                            padding: "3px 8px",
-                            backgroundColor: "#fee2e2",
-                            color: "#7f1d1d",
-                            border: "none",
-                            borderRadius: "3px",
-                            fontSize: "10px",
-                            fontWeight: "600",
-                            cursor: "pointer"
-                          }}
-                        >
-                          Delete
-                        </button>
-                      </td>
+                      {hasEditPermission && (
+                        <td style={{ padding: "8px 12px", textAlign: "center" }}>
+                          <button
+                            onClick={() => deleteMapping(mapping.rule_id)}
+                            style={{
+                              padding: "3px 8px",
+                              backgroundColor: "#fee2e2",
+                              color: "#7f1d1d",
+                              border: "none",
+                              borderRadius: "3px",
+                              fontSize: "10px",
+                              fontWeight: "600",
+                              cursor: "pointer"
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   ))
                 )}
@@ -1152,4 +1261,3 @@ function EnrichmentModule() {
 }
 
 export default EnrichmentModule;
-

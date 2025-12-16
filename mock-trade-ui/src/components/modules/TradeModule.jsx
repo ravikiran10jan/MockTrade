@@ -1,29 +1,61 @@
 import React, { useState, useEffect } from "react";
+import { useAuth } from '../../contexts/AuthContext';
+import { usePermissions } from '../../hooks/usePermissions';
 
 // Prefer an explicit VITE_API_BASE; fall back to empty string so dev proxy forwards relative /api calls
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 const FONT_FAMILY = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
 
 function TradeModule() {
+  const { getAuthHeaders, user } = useAuth();
+  const { canEditModule } = usePermissions();
+  
+  // For ADMIN users, always allow access regardless of module permissions
+  const isAdmin = user?.role === "ADMIN";
   const [trades, setTrades] = useState([]);
+  const [enrichedTrades, setEnrichedTrades] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("success");
   const [filterStatus, setFilterStatus] = useState("ALL");
   const [selectedTrade, setSelectedTrade] = useState(null);
+  const [hasEditPermission, setHasEditPermission] = useState(true); // Default to true, check asynchronously
+  const [activeTab, setActiveTab] = useState("regular"); // "regular" or "enriched"
+  const [filterPortfolio, setFilterPortfolio] = useState(""); // For enriched trades
 
   // Filters
   const [filterInstrument, setFilterInstrument] = useState("");
   const [filterTrader, setFilterTrader] = useState("");
 
+  // Check if user has permission to edit trades
   useEffect(() => {
-    fetchTrades();
+    const checkPermissions = async () => {
+      const canEdit = isAdmin || await canEditModule("Trade");
+      setHasEditPermission(canEdit);
+      
+      if (!canEdit && !isAdmin) {
+        setMessage("You have read-only access to trades. Contact your administrator for edit permissions.");
+        setMessageType("info");
+      }
+    };
+    
+    checkPermissions();
   }, []);
+
+  useEffect(() => {
+    if (activeTab === "regular") {
+      fetchTrades();
+    } else {
+      fetchEnrichedTrades();
+    }
+  }, [activeTab]);
 
   const fetchTrades = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE}/api/v1/trades/`);
+      const response = await fetch(`${API_BASE}/api/v1/trades/`, {
+        headers: getAuthHeaders()
+      });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
       setTrades(Array.isArray(data) ? data : []);
@@ -35,7 +67,33 @@ function TradeModule() {
     }
   };
 
+  const fetchEnrichedTrades = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_BASE}/api/v1/trade-query/enriched-trades`, {
+        headers: getAuthHeaders()
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      setEnrichedTrades(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Error fetching enriched trades:", error);
+      setEnrichedTrades([]);
+      setMessage(`Error fetching enriched trades: ${error.message}`);
+      setMessageType("error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleCancelTrade = async (tradeId) => {
+    // Check if user has permission to cancel trades (unless they're an admin)
+    if (!isAdmin && !hasEditPermission) {
+      setMessage("You don't have permission to cancel trades.");
+      setMessageType("error");
+      return;
+    }
+    
     if (!window.confirm("Are you sure you want to cancel this trade?")) {
       return;
     }
@@ -43,7 +101,7 @@ function TradeModule() {
     try {
       const response = await fetch(`${API_BASE}/api/v1/trades/${tradeId}/cancel`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" }
+        headers: getAuthHeaders()
       });
 
       if (!response.ok) {
@@ -74,6 +132,13 @@ function TradeModule() {
   };
 
   const handleExpireTrade = async (tradeId) => {
+    // Check if user has permission to expire trades (unless they're an admin)
+    if (!isAdmin && !hasEditPermission) {
+      setMessage("You don't have permission to expire trades.");
+      setMessageType("error");
+      return;
+    }
+    
     if (!window.confirm("Are you sure you want to expire this trade?")) {
       return;
     }
@@ -81,7 +146,7 @@ function TradeModule() {
     try {
       const response = await fetch(`${API_BASE}/api/v1/trades/${tradeId}/expire`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" }
+        headers: getAuthHeaders()
       });
 
       if (!response.ok) {
@@ -110,6 +175,51 @@ function TradeModule() {
       setMessageType("error");
     }
   };
+  
+  const handleFillTrade = async (tradeId) => {
+    // Check if user has permission to fill trades (unless they're an admin)
+    if (!isAdmin && !hasEditPermission) {
+      setMessage("You don't have permission to fill trades.");
+      setMessageType("error");
+      return;
+    }
+    
+    if (!window.confirm("Are you sure you want to fill this trade?")) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE}/api/v1/trades/${tradeId}/fill`, {
+        method: "POST",
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) {
+        let errorDetail = `HTTP ${response.status}`;
+        try {
+          const responseText = await response.text();
+          try {
+            const errorData = JSON.parse(responseText);
+            errorDetail = errorData.detail || errorData.message || responseText;
+          } catch (jsonError) {
+            errorDetail = responseText || errorDetail;
+          }
+        } catch (textError) {
+          errorDetail = `HTTP ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorDetail);
+      }
+
+      setMessage("Trade filled successfully");
+      setMessageType("success");
+      await fetchTrades();
+      setSelectedTrade(null);
+      setTimeout(() => setMessage(""), 3000);
+    } catch (error) {
+      setMessage(`Error: ${error.message}`);
+      setMessageType("error");
+    }
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -127,12 +237,20 @@ function TradeModule() {
     }
   };
 
-  const filteredTrades = trades.filter((trade) => {
-    if (filterStatus !== "ALL" && trade.status !== filterStatus) return false;
-    if (filterInstrument && !trade.instrument?.toLowerCase().includes(filterInstrument.toLowerCase())) return false;
-    if (filterTrader && !trade.trader?.toLowerCase().includes(filterTrader.toLowerCase())) return false;
-    return true;
-  });
+  const filteredTrades = activeTab === "regular" ? 
+    trades.filter((trade) => {
+      if (filterStatus !== "ALL" && trade.status !== filterStatus) return false;
+      if (filterInstrument && !trade.instrument?.toLowerCase().includes(filterInstrument.toLowerCase())) return false;
+      if (filterTrader && !trade.trader?.toLowerCase().includes(filterTrader.toLowerCase())) return false;
+      return true;
+    }) :
+    enrichedTrades.filter((trade) => {
+      if (filterStatus !== "ALL" && trade.status !== filterStatus) return false;
+      if (filterInstrument && !trade.instrument_symbol?.toLowerCase().includes(filterInstrument.toLowerCase())) return false;
+      if (filterTrader && !trade.trader_name?.toLowerCase().includes(filterTrader.toLowerCase())) return false;
+      if (filterPortfolio && !trade.portfolio_name?.toLowerCase().includes(filterPortfolio.toLowerCase())) return false;
+      return true;
+    });
 
   return (
     <div style={{ fontFamily: FONT_FAMILY }}>
@@ -155,6 +273,51 @@ function TradeModule() {
         }}>
           Monitor and manage all trades. Cancel or expire trades as needed.
         </p>
+      </div>
+
+      {/* Tab Navigation */}
+      <div style={{
+        display: "flex",
+        gap: "8px",
+        marginBottom: "20px",
+        borderBottom: "1px solid #e5e7eb"
+      }}>
+        <button
+          onClick={() => setActiveTab("regular")}
+          style={{
+            padding: "8px 16px",
+            backgroundColor: activeTab === "regular" ? "#f0f9ff" : "#f3f4f6",
+            color: activeTab === "regular" ? "#1d4ed8" : "#6b7280",
+            border: activeTab === "regular" ? "1px solid #bfdbfe" : "1px solid #d1d5db",
+            borderBottom: activeTab === "regular" ? "none" : "1px solid #d1d5db",
+            borderTopLeftRadius: "4px",
+            borderTopRightRadius: "4px",
+            cursor: "pointer",
+            fontWeight: activeTab === "regular" ? "600" : "500",
+            fontSize: "12px",
+            fontFamily: FONT_FAMILY
+          }}
+        >
+          Regular Trades
+        </button>
+        <button
+          onClick={() => setActiveTab("enriched")}
+          style={{
+            padding: "8px 16px",
+            backgroundColor: activeTab === "enriched" ? "#f0f9ff" : "#f3f4f6",
+            color: activeTab === "enriched" ? "#1d4ed8" : "#6b7280",
+            border: activeTab === "enriched" ? "1px solid #bfdbfe" : "1px solid #d1d5db",
+            borderBottom: activeTab === "enriched" ? "none" : "1px solid #d1d5db",
+            borderTopLeftRadius: "4px",
+            borderTopRightRadius: "4px",
+            cursor: "pointer",
+            fontWeight: activeTab === "enriched" ? "600" : "500",
+            fontSize: "12px",
+            fontFamily: FONT_FAMILY
+          }}
+        >
+          Enriched Trades
+        </button>
       </div>
 
       {/* Message */}

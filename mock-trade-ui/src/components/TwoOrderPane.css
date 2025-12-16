@@ -1,0 +1,86 @@
+/* TwoOrderPane.css
+   Styles for a compact two-order blotter-like pane.
+   - Header row aligns with order rows via CSS grid
+   - Fixed column widths for key fields
+   - Responsive: stacks secondary fields under main line on narrow viewports
+*/
+
+.two-order-pane {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 8px;
+  margin: 12px 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  color: #1f2933;
+}
+
+/* header grid: column sizes chosen to match content */
+.two-order-header,
+.two-order-row {
+  display: grid;
+  grid-template-columns: 120px 64px 84px 110px 110px 1fr; /* Symbol, Side, Qty, Price, Status, Time/notes */
+  align-items: center;
+  gap: 12px;
+}
+
+.two-order-header {
+  font-size: 11px;
+  font-weight: 700;
+  color: #4b5563;
+  padding: 6px 8px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.two-order-row {
+  font-size: 13px;
+  padding: 8px 8px;
+  line-height: 1.2;
+}
+
+.two-order-row + .two-order-row {
+  border-top: 1px solid #f3f4f6; /* subtle separation */
+}
+
+/* cell styling */
+.two-cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 2px 4px;
+}
+
+.cell-symbol { font-weight: 700; }
+.cell-side { text-align: center; font-weight: 700; }
+.cell-qty { text-align: right; font-variant-numeric: tabular-nums; }
+.cell-price { text-align: right; font-variant-numeric: tabular-nums; }
+.cell-status { text-align: center; }
+.cell-time { color: #6b7280; font-size: 12px; }
+
+/* Light row striping for readability */
+.two-order-row:nth-child(odd) { background: #ffffff; }
+.two-order-row:nth-child(even) { background: #fafafa; }
+
+/* Responsive: on small widths stack less important fields under first line */
+@media (max-width: 700px) {
+  .two-order-header,
+  .two-order-row {
+    grid-template-columns: 1fr; /* stack */
+  }
+  .two-order-header { display: none; } /* hide header on very small screens for compactness */
+  .row-main {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+  .row-secondary {
+    display: flex;
+    gap: 12px;
+    margin-top: 6px;
+    color: #6b7280;
+    font-size: 12px;
+  }
+  .cell-symbol { min-width: 0; }
+  .cell-price, .cell-qty { min-width: 0; }
+}
+

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useAuth } from '../contexts/AuthContext';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '';
 const FONT_FAMILY = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
@@ -9,6 +10,7 @@ const TABLE_HEADER_STYLE = {
 };
 
 function TradeBooking() {
+  const { getAuthHeaders } = useAuth();
   const [trades, setTrades] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -21,7 +23,9 @@ function TradeBooking() {
   const fetchTrades = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE}/api/v1/trades/`);
+      const response = await fetch(`${API_BASE}/api/v1/trades/`, {
+        headers: getAuthHeaders()
+      });
       if (!response.ok) throw new Error("Failed to fetch trades");
       const data = await response.json();
       setTrades(data);
@@ -36,6 +40,7 @@ function TradeBooking() {
     try {
       const response = await fetch(`${API_BASE}/api/v1/trades/${tradeId}/cancel`, {
         method: "POST",
+        headers: getAuthHeaders()
       });
       if (!response.ok) throw new Error("Failed to cancel trade");
       setMessage("Trade cancelled successfully");
@@ -49,6 +54,7 @@ function TradeBooking() {
     try {
       const response = await fetch(`${API_BASE}/api/v1/trades/${tradeId}/expire`, {
         method: "POST",
+        headers: getAuthHeaders()
       });
       if (!response.ok) throw new Error("Failed to expire trade");
       setMessage("Trade expired successfully");

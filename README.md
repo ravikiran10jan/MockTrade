@@ -86,6 +86,8 @@ npm run dev
 - API Docs: http://localhost:8000/docs
 - Module List: http://localhost:8000/api/v1/modules
 
+> **Note**: For Docker deployments, see [DOCKER_BEST_PRACTICES.md](DOCKER_BEST_PRACTICES.md) to ensure data persistence between container restarts.
+
 ---
 
 ## 📚 Documentation
@@ -97,6 +99,7 @@ npm run dev
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Design principles and architectural decisions |
 | [ARCHITECTURE_DIAGRAM.md](ARCHITECTURE_DIAGRAM.md) | Visual system diagrams and data flow |
 | [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md) | What was accomplished and next steps |
+| [DOCKER_BEST_PRACTICES.md](DOCKER_BEST_PRACTICES.md) | Best practices for Docker deployment and data persistence |
 
 ---
 

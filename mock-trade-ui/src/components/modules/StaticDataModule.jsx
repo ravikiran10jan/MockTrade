@@ -1,15 +1,28 @@
 import React, { useState, useEffect } from "react";
+import { useAuth } from "../../contexts/AuthContext";
+import { usePermissions } from "../../hooks/usePermissions";
 
 // Prefer an explicit VITE_API_BASE; fall back to empty string so dev proxy forwards relative /api calls
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 const FONT_FAMILY = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
 
 function StaticDataModule() {
+  const { getAuthHeaders, user } = useAuth();
+  const { canEditModule, canViewModule } = usePermissions();
   const [activeSection, setActiveSection] = useState("instruments");
   const [activeSubtypeTab, setActiveSubtypeTab] = useState(null);
+  const [hasEditPermission, setHasEditPermission] = useState(false);
+  const [hasViewPermission, setHasViewPermission] = useState(true);
+  const [permissionChecked, setPermissionChecked] = useState(false);
+  const [permissionMessage, setPermissionMessage] = useState("");
+  
+  // For ADMIN users, always allow editing regardless of module permissions
+  const isAdmin = user?.role === "ADMIN";
+  const isDisabled = !isAdmin && !hasEditPermission;
 
   const [instruments, setInstruments] = useState([]);
   const [accounts, setAccounts] = useState([]);
+  const [counterparties, setCounterparties] = useState([]);
   const [traders, setTraders] = useState([]);
   const [brokers, setBrokers] = useState([]);
   const [clearers, setClearers] = useState([]);
@@ -22,9 +35,37 @@ function StaticDataModule() {
   const [otcDetails, setOtcDetails] = useState({});
   const [showOtcForm, setShowOtcForm] = useState(false);
 
+  // Check permissions when component mounts
   useEffect(() => {
-    fetchData();
-  }, [activeSection]);
+    const checkPermissions = async () => {
+      try {
+        const canView = isAdmin || await canViewModule("StaticData");
+        const canEdit = isAdmin || await canEditModule("StaticData");
+        
+        setHasViewPermission(canView);
+        setHasEditPermission(canEdit);
+        setPermissionChecked(true);
+        
+        if (!canView) {
+          setPermissionMessage("You don't have permission to access the Static Data module.");
+        } else if (!canEdit && !isAdmin) {
+          setPermissionMessage("You have read-only access to the Static Data module.");
+        }
+      } catch (error) {
+        console.error('Error checking permissions:', error);
+        setPermissionMessage("Error checking permissions.");
+        setPermissionChecked(true);
+      }
+    };
+
+    checkPermissions();
+  }, [canViewModule, canEditModule, isAdmin]);
+
+  useEffect(() => {
+    if (permissionChecked && hasViewPermission) {
+      fetchData();
+    }
+  }, [activeSection, permissionChecked, hasViewPermission]);
 
   const normalizeArray = (payload) => {
     if (Array.isArray(payload)) return payload;
@@ -33,10 +74,14 @@ function StaticDataModule() {
   };
 
   const fetchData = async () => {
+    if (!hasViewPermission) return;
+    
     setLoading(true);
     try {
       const section = activeSection;
-      const response = await fetch(`${API_BASE}/api/v1/static-data/${section}`);
+      const response = await fetch(`${API_BASE}/api/v1/static-data/${section}`, {
+        headers: getAuthHeaders()
+      });
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -47,6 +92,7 @@ function StaticDataModule() {
       const normalized = normalizeArray(data);
 
       if (section === "instruments") setInstruments(normalized);
+      else if (section === "counterparties") setCounterparties(normalized);
       else if (section === "accounts") setAccounts(normalized);
       else if (section === "traders") setTraders(normalized);
       else if (section === "brokers") setBrokers(normalized);
@@ -60,6 +106,13 @@ function StaticDataModule() {
 
   const handleCreateNew = async (e) => {
     e.preventDefault();
+    
+    // Check if user has permission to edit (unless they're an admin)
+    if (!isAdmin && !hasEditPermission) {
+      setMessage("You don't have permission to create new items in Static Data.");
+      return;
+    }
+    
     try {
       let payload = { ...formData };
 
@@ -76,7 +129,7 @@ function StaticDataModule() {
       try {
         const response = await fetch(`${API_BASE}/api/v1/static-data/${activeSection}`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: getAuthHeaders(),
           body: JSON.stringify(payload),
         });
 
@@ -111,6 +164,13 @@ function StaticDataModule() {
 
   const handleSaveOtcDetails = async (e) => {
     e.preventDefault();
+    
+    // Check if user has permission to edit (unless they're an admin)
+    if (!isAdmin && !hasEditPermission) {
+      setMessage("You don't have permission to save OTC details.");
+      return;
+    }
+    
     if (!selectedInstrument) {
       setMessage("Error: No instrument selected");
       return;
@@ -121,7 +181,7 @@ function StaticDataModule() {
         `${API_BASE}/api/v1/static-data/instruments/${selectedInstrument.instrument_id}/otc`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: getAuthHeaders(),
           body: JSON.stringify(otcDetails),
         }
       );
@@ -147,6 +207,12 @@ function StaticDataModule() {
   };
 
   const handleUpdate = async (row) => {
+    // Check if user has permission to edit (unless they're an admin)
+    if (!isAdmin && !hasEditPermission) {
+      setMessage("You don't have permission to update items in Static Data.");
+      return;
+    }
+    
     // Get primary key for the item
     const idKey = activeSection === "instruments" ? "instrument_id" :
                   activeSection === "accounts" ? "account_id" :
@@ -156,12 +222,39 @@ function StaticDataModule() {
 
     const itemId = row[idKey];
 
-    // Pre-populate form with current data
-    setFormData(row);
-    setShowForm(true);
+    try {
+      const response = await fetch(`${API_BASE}/api/v1/static-data/${activeSection}/${itemId}`, {
+        method: "PUT",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(row),
+      });
+
+      if (!response.ok) {
+        let errorDetail = "Failed to update";
+        try {
+          const errorData = await response.json();
+          errorDetail = errorData.detail || errorData.message || JSON.stringify(errorData);
+        } catch (e) {
+          errorDetail = `HTTP ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorDetail);
+      }
+
+      setMessage(`${activeSection.slice(0, -1)} updated successfully`);
+      fetchData();
+      setTimeout(() => setMessage(""), 3000);
+    } catch (error) {
+      setMessage(`Error: ${error.message}`);
+    }
   };
 
   const handleDelete = async (row) => {
+    // Check if user has permission to edit (unless they're an admin)
+    if (!isAdmin && !hasEditPermission) {
+      setMessage("You don't have permission to delete items in Static Data.");
+      return;
+    }
+    
     if (!window.confirm(`Are you sure you want to delete this ${activeSection.slice(0, -1)}?`)) {
       return;
     }
@@ -178,7 +271,7 @@ function StaticDataModule() {
 
       const response = await fetch(`${API_BASE}/api/v1/static-data/${activeSection}/${itemId}`, {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
       });
 
       if (!response.ok) {
@@ -196,13 +289,29 @@ function StaticDataModule() {
       fetchData();
       setTimeout(() => setMessage(""), 3000);
     } catch (error) {
-      if (error.message.includes("Failed to fetch")) {
-        setMessage(`Error: Cannot reach API server at ${API_BASE}. Is the backend running?`);
-      } else {
-        setMessage(`Error: ${error.message}`);
-      }
+      setMessage(`Error: ${error.message}`);
     }
   };
+
+  // Show permission message if user doesn't have access
+  if (!permissionChecked) {
+    return (
+      <div style={{ padding: "20px", fontFamily: FONT_FAMILY }}>
+        <div style={{
+          padding: "15px",
+          backgroundColor: "#eff6ff",
+          border: "1px solid #dbeafe",
+          borderRadius: "6px",
+          color: "#1e40af"
+        }}>
+          Checking permissions...
+        </div>
+      </div>
+    );
+  }
+
+  // Always show content but disable actions for users without edit permission
+  // VIEWER users should see all content but with disabled actions
 
   const formFields = {
     instruments: [
@@ -210,6 +319,8 @@ function StaticDataModule() {
       { label: "Name", key: "name", type: "text", required: true, placeholder: "E-mini S&P 500" },
       { label: "Asset Class", key: "asset_class", type: "text", required: false, placeholder: "FX, EQUITY, FUTURE, OTC" },
       { label: "Instrument Type", key: "instrument_type", type: "text", required: false, placeholder: "OTC_FX_FWD, FX_FUT, STRATEGY" },
+      { label: "Expiry Date", key: "expiry_date", type: "date", required: false },
+      { label: "Last Trading Date", key: "last_trading_date", type: "date", required: false },
       { label: "Status", key: "status", type: "text", required: false, placeholder: "ACTIVE" },
       { label: "Metadata (JSON, optional)", key: "metadata", type: "json", required: false }
     ],
@@ -231,6 +342,56 @@ function StaticDataModule() {
       { label: "Name", key: "name", type: "text", required: true },
       { label: "LEID", key: "leid", type: "text", required: true, placeholder: "Legal Entity Identifier" },
     ],
+    counterparties: [
+      // General / Identification
+      { label: "Counterparty Code", key: "counterparty_code", type: "text", required: true, placeholder: "CP-1001" },
+      { label: "Full Legal Name", key: "full_legal_name", type: "text", required: true },
+      { label: "Short Name / Alias", key: "short_name", type: "text", required: false },
+      { label: "Customer Type", key: "customer_type", type: "text", required: true, placeholder: "Internal or External" },
+      { label: "Counterparty Category", key: "category", type: "text", required: false, placeholder: "Bank, Broker, Client..." },
+      { label: "Business Roles (JSON)", key: "business_roles", type: "json", required: false, placeholder: '["FX Counterparty","Client"]' },
+
+      // Legal & Address
+      { label: "Country of Incorporation", key: "country_of_incorporation", type: "text", required: false },
+      { label: "LEI", key: "lei", type: "text", required: false },
+      { label: "Registered Address (JSON)", key: "registered_address", type: "json", required: false, placeholder: '{"line1":"","city":"","postal":""}' },
+      { label: "Operational Address (JSON)", key: "operational_address", type: "json", required: false },
+      { label: "Tax ID / VAT", key: "tax_id", type: "text", required: false },
+      { label: "Registration Number", key: "registration_number", type: "text", required: false },
+
+      // Contacts
+      { label: "Primary Contact (JSON)", key: "primary_contact", type: "json", required: false, placeholder: '{"name":"","email":"","phone":""}' },
+      { label: "Secondary Contact (JSON)", key: "secondary_contact", type: "json", required: false },
+      { label: "SWIFT / BIC", key: "swift_bic", type: "text", required: false },
+
+      // Bank & Settlement
+      { label: "Bank Details (JSON)", key: "bank_details", type: "json", required: false, placeholder: '{"bank_name":"","branch":"","account":"","iban":"","currency":"USD"}' },
+      { label: "Settlement Instructions", key: "settlement_instructions", type: "text", required: false },
+      { label: "Default Settlement Account (Y/N)", key: "default_settlement_account", type: "text", required: false, placeholder: "Y/N" },
+
+      // Relationships
+      { label: "Parent / Group Entity", key: "parent_entity", type: "text", required: false },
+      { label: "Counterparty Group", key: "counterparty_group", type: "text", required: false },
+      { label: "Intercompany Group", key: "intercompany_group", type: "text", required: false },
+      { label: "Relationship Type", key: "relationship_type", type: "text", required: false },
+
+      // Risk & Limits
+      { label: "Credit Rating Agency", key: "credit_rating_agency", type: "text", required: false },
+      { label: "Credit Rating", key: "credit_rating", type: "text", required: false },
+      { label: "Internal Risk Rating", key: "internal_risk_rating", type: "text", required: false },
+      { label: "Counterparty Limit (Amount)", key: "counterparty_limit_amount", type: "number", required: false },
+      { label: "Counterparty Limit Currency", key: "counterparty_limit_currency", type: "text", required: false },
+      { label: "Limit Expiry Date", key: "limit_expiry_date", type: "date", required: false },
+
+      // Status & Control
+      { label: "Status", key: "status", type: "text", required: false, placeholder: "Active, Inactive, On Hold" },
+      { label: "Authorized (Y/N)", key: "authorized", type: "text", required: false, placeholder: "Y/N" },
+      { label: "Account Manager", key: "account_manager", type: "text", required: false },
+      { label: "Created By", key: "created_by", type: "text", required: false },
+      { label: "Created At", key: "created_at", type: "date", required: false },
+      { label: "Updated By", key: "updated_by", type: "text", required: false },
+      { label: "Updated At", key: "updated_at", type: "date", required: false },
+    ],
   };
 
   const otcFormFields = [
@@ -250,7 +411,7 @@ function StaticDataModule() {
     instruments: {
       title: "Instruments",
       data: Array.isArray(instruments) ? instruments : [],
-      columns: ["instrument_id", "symbol", "name", "asset_class", "instrument_type", "status"],
+      columns: ["instrument_id", "symbol", "name", "asset_class", "instrument_type", "expiry_date", "status"],
     },
     accounts: {
       title: "Accounts",
@@ -271,6 +432,11 @@ function StaticDataModule() {
       title: "Clearers",
       data: Array.isArray(clearers) ? clearers : [],
       columns: ["clearer_id", "code", "name", "leid", "status"],
+    },
+    counterparties: {
+      title: "Counterparties",
+      data: Array.isArray(counterparties) ? counterparties : [],
+      columns: ["counterparty_code", "full_legal_name", "short_name", "customer_type", "category", "country_of_incorporation", "status"],
     },
   };
 
@@ -432,15 +598,16 @@ function StaticDataModule() {
             {!showForm && (
               <button
                 onClick={() => setShowForm(true)}
+                disabled={isDisabled}
                 style={{
                   width: "100%",
                   padding: "8px 12px",
-                  backgroundColor: "#1d4ed8",
-                  color: "#fff",
+                  backgroundColor: !isDisabled ? "#1d4ed8" : "#d1d5db",
+                  color: !isDisabled ? "#fff" : "#6b7280",
                   border: "none",
                   borderRadius: "4px",
                   fontWeight: "600",
-                  cursor: "pointer",
+                  cursor: !isDisabled ? "pointer" : "not-allowed",
                   fontSize: "12px",
                   marginBottom: "16px",
                   fontFamily: FONT_FAMILY
@@ -471,10 +638,11 @@ function StaticDataModule() {
                           value={formData[field.key] || ''}
                           onChange={(e) => setFormData({ ...formData, [field.key]: e.target.value })}
                           placeholder='{"key": "value"}'
+                          disabled={isDisabled}
                           style={{
                             width: '100%',
                             padding: '8px 10px',
-                            backgroundColor: '#f9fafb',
+                            backgroundColor: !isDisabled ? '#f9fafb' : '#f3f4f6',
                             color: '#1f2933',
                             border: '1px solid #d1d5db',
                             borderRadius: '4px',
@@ -492,10 +660,11 @@ function StaticDataModule() {
                           onChange={(e) => setFormData({ ...formData, [field.key]: e.target.value })}
                           placeholder={field.placeholder || ""}
                           required={field.required}
+                          disabled={isDisabled}
                           style={{
                             width: "100%",
                             padding: "8px 10px",
-                            backgroundColor: "#f9fafb",
+                            backgroundColor: !isDisabled ? "#f9fafb" : "#f3f4f6",
                             color: "#1f2933",
                             border: "1px solid #d1d5db",
                             borderRadius: "4px",
@@ -509,14 +678,15 @@ function StaticDataModule() {
                   ))}
                   <button
                     type="submit"
+                    disabled={isDisabled}
                     style={{
                       padding: "10px 12px",
-                      backgroundColor: "#1d4ed8",
-                      color: "#fff",
+                      backgroundColor: !isDisabled ? "#1d4ed8" : "#d1d5db",
+                      color: !isDisabled ? "#fff" : "#6b7280",
                       border: "none",
                       borderRadius: "4px",
                       fontWeight: "600",
-                      cursor: "pointer",
+                      cursor: !isDisabled ? "pointer" : "not-allowed",
                       fontSize: "12px",
                       fontFamily: FONT_FAMILY,
                       marginTop: "8px"
@@ -527,15 +697,16 @@ function StaticDataModule() {
                 </form>
                 <button
                   onClick={() => setShowForm(false)}
+                  disabled={isDisabled}
                   style={{
                     width: "100%",
                     padding: "8px 12px",
                     marginTop: "8px",
-                    backgroundColor: "#f3f4f6",
-                    color: "#6b7280",
+                    backgroundColor: !isDisabled ? "#f3f4f6" : "#e5e7eb",
+                    color: !isDisabled ? "#6b7280" : "#9ca3af",
                     border: "1px solid #d1d5db",
                     borderRadius: "4px",
-                    cursor: "pointer",
+                    cursor: !isDisabled ? "pointer" : "not-allowed",
                     fontWeight: "600",
                     fontSize: "12px",
                     fontFamily: FONT_FAMILY
@@ -635,7 +806,7 @@ function StaticDataModule() {
                                 fontSize: "11px"
                               }}
                             >
-                              {String(row[col] || "-").substring(0, 30)}
+                              {col === 'expiry_date' || col === 'last_trading_date' || col === 'created_at' || col === 'updated_at' ? (row[col] ? new Date(row[col]).toLocaleDateString() : '-') : String(row[col] || "-").substring(0, 30)}
                             </td>
                           ))}
                           <td
@@ -649,39 +820,49 @@ function StaticDataModule() {
                             <div style={{ display: "flex", gap: "4px", justifyContent: "center" }}>
                               <button
                                 onClick={() => handleUpdate(row)}
+                                disabled={isDisabled}
                                 style={{
                                   padding: "4px 8px",
-                                  backgroundColor: "#3b82f6",
-                                  color: "#fff",
+                                  backgroundColor: !isDisabled ? "#3b82f6" : "#d1d5db",
+                                  color: !isDisabled ? "#fff" : "#6b7280",
                                   border: "none",
                                   borderRadius: "3px",
-                                  cursor: "pointer",
+                                  cursor: !isDisabled ? "pointer" : "not-allowed",
                                   fontWeight: "600",
                                   fontSize: "10px",
                                   fontFamily: FONT_FAMILY,
                                   transition: "all 0.15s"
                                 }}
-                                onMouseEnter={(e) => e.target.style.backgroundColor = "#2563eb"}
-                                onMouseLeave={(e) => e.target.style.backgroundColor = "#3b82f6"}
+                                onMouseEnter={(e) => {
+                                  if (!isDisabled) e.target.style.backgroundColor = "#2563eb";
+                                }}
+                                onMouseLeave={(e) => {
+                                  if (!isDisabled) e.target.style.backgroundColor = "#3b82f6";
+                                }}
                               >
                                 Edit
                               </button>
                               <button
                                 onClick={() => handleDelete(row)}
+                                disabled={isDisabled}
                                 style={{
                                   padding: "4px 8px",
-                                  backgroundColor: "#ef4444",
-                                  color: "#fff",
+                                  backgroundColor: !isDisabled ? "#ef4444" : "#d1d5db",
+                                  color: !isDisabled ? "#fff" : "#6b7280",
                                   border: "none",
                                   borderRadius: "3px",
-                                  cursor: "pointer",
+                                  cursor: !isDisabled ? "pointer" : "not-allowed",
                                   fontWeight: "600",
                                   fontSize: "10px",
                                   fontFamily: FONT_FAMILY,
                                   transition: "all 0.15s"
                                 }}
-                                onMouseEnter={(e) => e.target.style.backgroundColor = "#dc2626"}
-                                onMouseLeave={(e) => e.target.style.backgroundColor = "#ef4444"}
+                                onMouseEnter={(e) => {
+                                  if (!isDisabled) e.target.style.backgroundColor = "#dc2626";
+                                }}
+                                onMouseLeave={(e) => {
+                                  if (!isDisabled) e.target.style.backgroundColor = "#ef4444";
+                                }}
                               >
                                 Delete
                               </button>
@@ -751,13 +932,14 @@ function StaticDataModule() {
               <div style={{ display: "flex", gap: "8px" }}>
                 <button
                   onClick={() => setShowOtcForm(!showOtcForm)}
+                  disabled={isDisabled}
                   style={{
                     padding: "6px 12px",
-                    backgroundColor: "#1d4ed8",
-                    color: "#fff",
+                    backgroundColor: !isDisabled ? "#1d4ed8" : "#d1d5db",
+                    color: !isDisabled ? "#fff" : "#6b7280",
                     border: "none",
                     borderRadius: "4px",
-                    cursor: "pointer",
+                    cursor: !isDisabled ? "pointer" : "not-allowed",
                     fontWeight: "600",
                     fontSize: "12px",
                     fontFamily: FONT_FAMILY
@@ -767,13 +949,14 @@ function StaticDataModule() {
                 </button>
                 <button
                   onClick={() => { setSelectedInstrument(null); setShowOtcForm(false); setOtcDetails({}); }}
+                  disabled={isDisabled}
                   style={{
                     padding: "6px 12px",
-                    backgroundColor: "#9ca3af",
-                    color: "#fff",
+                    backgroundColor: !isDisabled ? "#9ca3af" : "#d1d5db",
+                    color: !isDisabled ? "#fff" : "#6b7280",
                     border: "none",
                     borderRadius: "4px",
-                    cursor: "pointer",
+                    cursor: !isDisabled ? "pointer" : "not-allowed",
                     fontWeight: "600",
                     fontSize: "12px",
                     fontFamily: FONT_FAMILY
@@ -810,10 +993,11 @@ function StaticDataModule() {
                         placeholder={field.placeholder}
                         value={otcDetails[field.key] || ""}
                         onChange={(e) => setOtcDetails({ ...otcDetails, [field.key]: e.target.value })}
+                        disabled={isDisabled}
                         style={{
                           width: "100%",
                           padding: "6px 8px",
-                          backgroundColor: "#fff",
+                          backgroundColor: !isDisabled ? "#fff" : "#f3f4f6",
                           color: "#1f2933",
                           border: "1px solid #d1d5db",
                           borderRadius: "4px",
@@ -828,13 +1012,14 @@ function StaticDataModule() {
                 <div style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
                   <button
                     type="submit"
+                    disabled={isDisabled}
                     style={{
                       padding: "6px 12px",
-                      backgroundColor: "#10b981",
-                      color: "#fff",
+                      backgroundColor: !isDisabled ? "#10b981" : "#d1d5db",
+                      color: !isDisabled ? "#fff" : "#6b7280",
                       border: "none",
                       borderRadius: "4px",
-                      cursor: "pointer",
+                      cursor: !isDisabled ? "pointer" : "not-allowed",
                       fontWeight: "600",
                       fontSize: "12px",
                       fontFamily: FONT_FAMILY
@@ -845,13 +1030,14 @@ function StaticDataModule() {
                   <button
                     type="button"
                     onClick={() => { setShowOtcForm(false); setOtcDetails({}); }}
+                    disabled={isDisabled}
                     style={{
                       padding: "6px 12px",
-                      backgroundColor: "#6b7280",
-                      color: "#fff",
+                      backgroundColor: !isDisabled ? "#6b7280" : "#d1d5db",
+                      color: !isDisabled ? "#fff" : "#6b7280",
                       border: "none",
                       borderRadius: "4px",
-                      cursor: "pointer",
+                      cursor: !isDisabled ? "pointer" : "not-allowed",
                       fontWeight: "600",
                       fontSize: "12px",
                       fontFamily: FONT_FAMILY
@@ -870,4 +1056,3 @@ function StaticDataModule() {
 }
 
 export default StaticDataModule;
-

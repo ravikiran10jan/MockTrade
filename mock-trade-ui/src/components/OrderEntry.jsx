@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from '../core/auth';
 import { usePermissions } from "../hooks/usePermissions";
 import "./BloombergTheme.css";
 

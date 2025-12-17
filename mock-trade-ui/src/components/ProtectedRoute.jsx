@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAuth } from '../contexts/AuthContext.jsx';
+import { useAuth } from '../core/auth';
 import Login from '../components/Login';
 
 const ProtectedRoute = ({ children }) => {

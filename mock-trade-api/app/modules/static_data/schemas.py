@@ -3,7 +3,7 @@
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any
 from datetime import datetime, date
-from app.shared.schemas import BaseSchema, TimestampedSchema
+from app.core import BaseSchema, TimestampedSchema
 
 class InstrumentSchema(BaseSchema):
     """Response schema for Instrument"""

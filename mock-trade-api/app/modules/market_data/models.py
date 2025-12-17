@@ -1,7 +1,7 @@
 # Market Data Module - Models
 
 from sqlalchemy import Column, String, Float, DateTime, ForeignKey
-from app.database import Base
+from app.core import Base
 from datetime import datetime
 
 class MarketData(Base):

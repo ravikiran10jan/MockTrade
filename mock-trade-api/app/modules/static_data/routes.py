@@ -2,9 +2,9 @@
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.database import get_db
+from app.core import get_db
 from app.modules.static_data import models, schemas
-from app.shared.services import publish_event, EventType
+from app.core import publish_event, EventType
 import uuid
 import logging
 from datetime import datetime, timezone

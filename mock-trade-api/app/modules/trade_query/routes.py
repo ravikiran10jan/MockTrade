@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.database import get_db
+from app.core import get_db
 from app.models import OrderHdr, Instrument, Trader, Account, PortfolioEnrichmentMapping
 from app.modules.trade.models import Trade
 from pydantic import BaseModel

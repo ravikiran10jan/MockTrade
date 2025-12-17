@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 
-from app.database import get_db
+from app.core import get_db
 from app.models import (
     Role, Permission, Module, RolePermissionMapping, UserRole, Trader
 )

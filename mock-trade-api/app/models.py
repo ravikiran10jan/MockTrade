@@ -1,5 +1,5 @@
 from sqlalchemy import Column, String, Integer, Float, Date, ForeignKey, DECIMAL, TIMESTAMP, JSON
-from app.database import Base
+from app.core import Base
 
 # ---------------- Core Tables ---------------- #
 

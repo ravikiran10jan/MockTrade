@@ -3,6 +3,25 @@ from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional, Dict, Any
 
+class PortfolioEnrichmentMappingCreateSchema(BaseModel):
+    """Schema for creating portfolio enrichment mappings"""
+    trader_id: str
+    account_id: str
+    portfolio_id: str
+    status: str = "ACTIVE"
+
+class PortfolioEnrichmentMappingSchema(BaseModel):
+    """Schema for portfolio enrichment mapping response"""
+    mapping_id: str
+    trader_id: str
+    account_id: str
+    portfolio_id: str
+    status: str
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
 class EnrichedOrderSchema(BaseModel):
     enriched_order_id: str
     order_id: str

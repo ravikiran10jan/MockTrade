@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { useAuth } from "../contexts/AuthContext";
-import { usePermissions } from "../hooks/usePermissions";
-import OrderEntry from "./OrderEntry";
-import StaticDataModule from "./modules/StaticDataModule";
+import { useAuth } from "../core/auth";
+import { usePermissions } from "../core/security";
+import { OrderEntry } from "../modules/order-entry";
+import { StaticDataModule } from "../modules/static-data";
+import { SecurityModule } from "../modules/security";
+import { TradeQueryModule } from "../modules/trade-query";
 import MarketDataModule from "./modules/MarketDataModule";
 import EnrichmentModule from "./modules/EnrichmentModule";
 import TradeModule from "./modules/TradeModule";
-import TradeQueryModule from "./modules/TradeQueryModule";
 import ConfirmationMonitor from "./modules/ConfirmationMonitor";
 import SettlementMonitor from "./modules/SettlementMonitor";
 import AccountingModule from "./modules/AccountingModule";
-import SecurityModule from "./modules/SecurityModule";
 import "./TradingDashboard.css";
 
 const FONT_FAMILY = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";

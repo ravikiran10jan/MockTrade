@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../core/auth';
 import { usePermissions } from '../../hooks/usePermissions';
 
 // Prefer an explicit VITE_API_BASE; fall back to empty string so dev proxy forwards relative /api calls

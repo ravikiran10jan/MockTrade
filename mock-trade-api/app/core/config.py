@@ -1,7 +1,10 @@
 # Core Configuration and Enums for MockTrade
 
 from enum import Enum
-from pydantic import BaseSettings
+try:
+    from pydantic_settings import BaseSettings
+except ImportError:
+    from pydantic import BaseSettings
 from dotenv import load_dotenv
 import os
 

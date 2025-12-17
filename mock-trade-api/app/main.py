@@ -29,6 +29,9 @@ from app.modules.trade import routes as trade_routes
 from app.modules.security import routes as security_routes
 from app.modules.auth import routes as auth_routes
 from app.modules.trade_query import routes as trade_query_routes
+from app.modules.confirmations import routes as confirmations_routes
+from app.modules.settlement import routes as settlement_routes
+from app.modules.accounting import routes as accounting_routes
 
 app = FastAPI(
     title="MockTrade API",
@@ -76,6 +79,12 @@ logger.info("Registering auth routes...")
 app.include_router(auth_routes.router)
 logger.info("Registering trade query routes...")
 app.include_router(trade_query_routes.router)
+logger.info("Registering confirmations routes...")
+app.include_router(confirmations_routes.router)
+logger.info("Registering settlement routes...")
+app.include_router(settlement_routes.router)
+logger.info("Registering accounting routes...")
+app.include_router(accounting_routes.router)
 
 logger.info("All routes registered successfully")
 

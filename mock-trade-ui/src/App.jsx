@@ -1,6 +1,5 @@
 import React, { Suspense } from 'react';
-import { AuthProvider } from './contexts/AuthContext.jsx';
-import ProtectedRoute from './components/ProtectedRoute';
+import { AuthProvider, ProtectedRoute } from './core';
 import Login from './components/Login';
 import './components/_blotter_override.css';
 

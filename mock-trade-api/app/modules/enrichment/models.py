@@ -1,7 +1,9 @@
 # Enrichment Module - Models
+# Import PortfolioEnrichmentMapping from main models
 
 from sqlalchemy import Column, String, Float, DateTime, ForeignKey, JSON
-from app.database import Base
+from app.core import Base
+from app.models import PortfolioEnrichmentMapping
 from datetime import datetime
 
 class EnrichedOrder(Base):
@@ -30,4 +32,7 @@ class EnrichedOrder(Base):
 
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+# Re-export for convenience
+__all__ = ['EnrichedOrder', 'PortfolioEnrichmentMapping']
 

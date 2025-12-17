@@ -2,7 +2,7 @@
 # Use existing TradeAllocation from app/models.py, define new Trade model
 
 from sqlalchemy import Column, String, Integer, Float, DateTime, ForeignKey, JSON
-from app.database import Base
+from app.core import Base
 from app.models import TradeAllocation  # Existing model
 from datetime import datetime
 

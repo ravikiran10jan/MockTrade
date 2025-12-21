@@ -1,13 +1,17 @@
 # Trade Query Module - Routes
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from sqlalchemy.orm import Session
 from app.core import get_db
+from app.core.websocket import manager
 from app.models import OrderHdr, Instrument, Trader, Account, PortfolioEnrichmentMapping
 from app.modules.trade.models import Trade
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/trade-query", tags=["Trade Query"])
 
@@ -200,3 +204,27 @@ def get_enriched_orders(
         })
     
     return enriched_orders
+
+
+@router.websocket("/ws/trades")
+async def websocket_trades_endpoint(websocket: WebSocket):
+    """
+    WebSocket endpoint for real-time trade updates.
+    Clients connect to receive live updates when trades are created, updated, or cancelled.
+    """
+    await manager.connect(websocket, channel="trades")
+    try:
+        while True:
+            # Keep connection alive and listen for client messages (ping/pong)
+            data = await websocket.receive_text()
+            logger.debug(f"Received from client: {data}")
+            
+            # Echo back to confirm connection (optional)
+            if data == "ping":
+                await manager.send_personal_message("pong", websocket)
+    except WebSocketDisconnect:
+        manager.disconnect(websocket, channel="trades")
+        logger.info("Client disconnected from trades WebSocket")
+    except Exception as e:
+        logger.error(f"WebSocket error: {e}")
+        manager.disconnect(websocket, channel="trades")

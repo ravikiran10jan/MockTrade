@@ -50,9 +50,35 @@ export async function expireTrade(tradeId) {
   });
 }
 
+/**
+ * Undo a trade cancellation or expiration
+ * @param {string} tradeId - Trade identifier
+ * @returns {Promise<Object>} Undo response
+ */
+export async function undoTrade(tradeId) {
+  const url = `${API_ENDPOINTS.TRADES}/${tradeId}/undo`;
+  return await apiFetch(url, {
+    method: 'POST',
+  });
+}
+
+/**
+ * Fetch audit trail for a trade
+ * @param {string} tradeId - Trade identifier
+ * @returns {Promise<Array>} List of audit trail entries
+ */
+export async function fetchTradeAuditTrail(tradeId) {
+  const url = `${API_ENDPOINTS.TRADES}/${tradeId}/audit-trail`;
+  return await apiFetch(url, {
+    method: 'GET',
+  });
+}
+
 export default {
   fetchEnrichedTrades,
   fetchEnrichedOrders,
   cancelTrade,
   expireTrade,
+  undoTrade,
+  fetchTradeAuditTrail,
 };

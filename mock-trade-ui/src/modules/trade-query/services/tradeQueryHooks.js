@@ -52,6 +52,17 @@ export function useEnrichedTrades() {
     }
   }, [fetchTrades]);
 
+  const undoTrade = useCallback(async (tradeId) => {
+    try {
+      await tradeQueryApi.undoTrade(tradeId);
+      await fetchTrades(); // Refresh after undo
+      return { success: true };
+    } catch (err) {
+      console.error('Error undoing trade:', err);
+      return { success: false, error: err.message };
+    }
+  }, [fetchTrades]);
+
   return {
     trades,
     loading,
@@ -59,6 +70,7 @@ export function useEnrichedTrades() {
     fetchTrades,
     cancelTrade,
     expireTrade,
+    undoTrade,
   };
 }
 

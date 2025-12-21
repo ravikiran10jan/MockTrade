@@ -44,7 +44,34 @@ class Trade(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+class TradeAuditTrail(Base):
+    """
+    Trade Audit Trail model
+    Stores lifecycle events for trade auditing and compliance
+    """
+    __tablename__ = "trade_audit_trail"
+    
+    audit_id = Column(String, primary_key=True, index=True)
+    trade_id = Column(String, ForeignKey("trade.trade_id"), nullable=False, index=True)
+    
+    # Event Information
+    event_type = Column(String, nullable=False)  # CREATED, CANCELLED, EXPIRED, ALLOCATED, SETTLED
+    event_description = Column(String, nullable=True)
+    
+    # Status Change Tracking
+    old_status = Column(String, nullable=True)
+    new_status = Column(String, nullable=True)
+    
+    # User Tracking
+    changed_by = Column(String, nullable=True)  # user_id or trader_id who made the change
+    
+    # Additional Event Data
+    event_metadata = Column(JSON, nullable=True)  # Store additional context (reason, allocations, etc.)
+    
+    # Timestamp
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
 # Re-export for convenience
-__all__ = ['Trade', 'TradeAllocation']
+__all__ = ['Trade', 'TradeAllocation', 'TradeAuditTrail']
 
 

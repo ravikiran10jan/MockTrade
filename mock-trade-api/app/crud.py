@@ -184,9 +184,14 @@ def update_order_status(db: Session, order_id: str, status: str):
 
 
 def simulate_fill(db: Session, order_id: str):
+    """Fill an order and automatically create a trade"""
+    from app.core import publish_event, EventType
+    
     o = db.query(OrderHdr).filter(OrderHdr.order_id == order_id).first()
     if not o:
         return {"error": "not found"}
+    
+    # Update order status to FILLED
     o.status = "FILLED"
     from datetime import datetime
     # Ensure model has filled_at column; set if present
@@ -196,8 +201,54 @@ def simulate_fill(db: Session, order_id: str):
         pass
     db.commit()
     db.refresh(o)
-    return {
-        "id": o.order_id,
-        "status": o.status,
-        "filled_at": str(getattr(o, 'filled_at', ''))
-    }
+    
+    # Publish ORDER_FILLED event
+    publish_event(EventType.ORDER_FILLED, {
+        "order_id": o.order_id,
+        "instrument_id": o.instrument_id,
+        "side": o.side,
+        "qty": o.qty,
+        "price": float(o.limit_price) if o.limit_price else 0.0,
+        "trader_id": o.trader_id,
+        "account_id": o.account_id
+    }, "order")
+    
+    # Automatically create a trade from the filled order
+    from app.modules.trade.service import TradeService
+    from app.modules.trade.schemas import TradeCreateSchema
+    
+    try:
+        trade_data = TradeCreateSchema(
+            order_id=o.order_id,
+            instrument_id=o.instrument_id,
+            side=o.side,
+            qty=o.qty,
+            price=float(o.limit_price) if o.limit_price else 0.0,
+            trader_id=o.trader_id,
+            account_id=o.account_id,
+            broker_id=None,  # Optional
+            commission=0.0,
+            pnl=None,
+            unrealized_pnl=None
+        )
+        
+        trade = TradeService.create_trade(db, trade_data)
+        
+        return {
+            "id": o.order_id,
+            "status": o.status,
+            "filled_at": str(getattr(o, 'filled_at', '')),
+            "trade_id": trade.trade_id,
+            "message": "Order filled and trade created successfully"
+        }
+    except Exception as e:
+        # If trade creation fails, still return the filled order
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Failed to create trade for order {order_id}: {e}")
+        return {
+            "id": o.order_id,
+            "status": o.status,
+            "filled_at": str(getattr(o, 'filled_at', '')),
+            "error": f"Trade creation failed: {str(e)}"
+        }

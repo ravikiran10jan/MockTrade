@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from '../../../core/auth';
 import { usePermissions } from '../../../core/security';
-import { useEnrichedTrades, useEnrichedOrders } from '../services/tradeQueryHooks';
+import { useEnrichedTrades } from '../services/tradeQueryHooks';
+import { useTradeWebSocket } from '../services/useTradeWebSocket';
 import { AllStatuses, getStatusColor, formatDate, formatNumber } from '../models/tradeModels';
+import TradeAuditTrailModal from './TradeAuditTrailModal';
 
 const FONT_FAMILY = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
 
@@ -14,24 +16,18 @@ function TradeQueryModule() {
   // Use custom hooks for data management
   const { 
     trades,
-    loading: tradesLoading,
-    error: tradesError,
+    loading,
+    error,
     fetchTrades,
     cancelTrade: cancelTradeService,
-    expireTrade: expireTradeService
+    expireTrade: expireTradeService,
+    undoTrade: undoTradeService
   } = useEnrichedTrades();
-  
-  const {
-    orders,
-    loading: ordersLoading,
-    error: ordersError,
-    fetchOrders
-  } = useEnrichedOrders();
   
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("success");
-  const [activeTab, setActiveTab] = useState("trades");
   const [hasViewPermission, setHasViewPermission] = useState(true);
+  const [selectedTradeForAudit, setSelectedTradeForAudit] = useState(null);
   
   // Filters
   const [filterStatus, setFilterStatus] = useState("ALL");
@@ -84,33 +80,63 @@ function TradeQueryModule() {
     }
   };
 
+  const handleUndoTrade = async (tradeId) => {
+    if (!window.confirm("Are you sure you want to undo this trade action and restore it to ACTIVE?")) {
+      return;
+    }
+    
+    const result = await undoTradeService(tradeId);
+    if (result.success) {
+      setMessage("Trade undo successful - restored to ACTIVE");
+      setMessageType("success");
+    } else {
+      setMessage(`Error undoing trade: ${result.error}`);
+      setMessageType("error");
+    }
+  };
+
   useEffect(() => {
     if (hasViewPermission) {
-      if (activeTab === "trades") {
-        fetchTrades();
-      } else {
-        fetchOrders();
-      }
+      fetchTrades();
     }
-  }, [activeTab, hasViewPermission, fetchTrades, fetchOrders]);
+  }, [hasViewPermission, fetchTrades]);
 
-  // Determine which loading state to use based on active tab
-  const isLoading = activeTab === "trades" ? tradesLoading : ordersLoading;
-  const currentError = activeTab === "trades" ? tradesError : ordersError;
+  // WebSocket handler for real-time trade updates
+  const handleTradeUpdate = useCallback((message) => {
+    console.log('Trade update received:', message.type);
+    // Refresh trades when any trade event occurs
+    fetchTrades();
+    
+    // Show notification based on event type
+    switch (message.type) {
+      case 'trade_created':
+        setMessage('New trade created');
+        setMessageType('success');
+        setTimeout(() => setMessage(''), 3000);
+        break;
+      case 'trade_cancelled':
+        setMessage('Trade cancelled');
+        setMessageType('success');
+        setTimeout(() => setMessage(''), 3000);
+        break;
+      case 'trade_expired':
+        setMessage('Trade expired');
+        setMessageType('success');
+        setTimeout(() => setMessage(''), 3000);
+        break;
+      default:
+        break;
+    }
+  }, [fetchTrades]);
+
+  // Connect to WebSocket for real-time updates
+  useTradeWebSocket(handleTradeUpdate, hasViewPermission);
 
   const filteredTrades = trades.filter((trade) => {
     if (filterStatus !== "ALL" && trade.status !== filterStatus) return false;
     if (filterInstrument && !trade.instrument_symbol?.toLowerCase().includes(filterInstrument.toLowerCase())) return false;
     if (filterTrader && !trade.trader_name?.toLowerCase().includes(filterTrader.toLowerCase())) return false;
     if (filterPortfolio && !trade.portfolio_name?.toLowerCase().includes(filterPortfolio.toLowerCase())) return false;
-    return true;
-  });
-
-  const filteredOrders = orders.filter((order) => {
-    if (filterStatus !== "ALL" && order.status !== filterStatus) return false;
-    if (filterInstrument && !order.instrument_symbol?.toLowerCase().includes(filterInstrument.toLowerCase())) return false;
-    if (filterTrader && !order.trader_name?.toLowerCase().includes(filterTrader.toLowerCase())) return false;
-    if (filterPortfolio && !order.portfolio_name?.toLowerCase().includes(filterPortfolio.toLowerCase())) return false;
     return true;
   });
 
@@ -142,7 +168,7 @@ function TradeQueryModule() {
           fontSize: "12px",
           color: "#4b5563"
         }}>
-          Enriched trade and order data with portfolio mappings and instrument details
+          Enriched trades with portfolio mappings (real-time via WebSocket)
         </p>
       </div>
 
@@ -164,51 +190,6 @@ function TradeQueryModule() {
           {messageType === "success" ? "✓" : "✕"} {message}
         </div>
       )}
-
-      {/* Tab Navigation */}
-      <div style={{
-        display: "flex",
-        gap: "8px",
-        marginBottom: "20px",
-        borderBottom: "1px solid #e5e7eb"
-      }}>
-        <button
-          onClick={() => setActiveTab("trades")}
-          style={{
-            padding: "8px 16px",
-            backgroundColor: activeTab === "trades" ? "#f0f9ff" : "#f3f4f6",
-            color: activeTab === "trades" ? "#1d4ed8" : "#6b7280",
-            border: activeTab === "trades" ? "1px solid #bfdbfe" : "1px solid #d1d5db",
-            borderBottom: activeTab === "trades" ? "none" : "1px solid #d1d5db",
-            borderTopLeftRadius: "4px",
-            borderTopRightRadius: "4px",
-            cursor: "pointer",
-            fontWeight: activeTab === "trades" ? "600" : "500",
-            fontSize: "12px",
-            fontFamily: FONT_FAMILY
-          }}
-        >
-          Enriched Trades
-        </button>
-        <button
-          onClick={() => setActiveTab("orders")}
-          style={{
-            padding: "8px 16px",
-            backgroundColor: activeTab === "orders" ? "#f0f9ff" : "#f3f4f6",
-            color: activeTab === "orders" ? "#1d4ed8" : "#6b7280",
-            border: activeTab === "orders" ? "1px solid #bfdbfe" : "1px solid #d1d5db",
-            borderBottom: activeTab === "orders" ? "none" : "1px solid #d1d5db",
-            borderTopLeftRadius: "4px",
-            borderTopRightRadius: "4px",
-            cursor: "pointer",
-            fontWeight: activeTab === "orders" ? "600" : "500",
-            fontSize: "12px",
-            fontFamily: FONT_FAMILY
-          }}
-        >
-          Enriched Orders
-        </button>
-      </div>
 
       {/* Filter Bar */}
       <div style={{
@@ -286,13 +267,7 @@ function TradeQueryModule() {
             }}
           />
           <button
-            onClick={() => {
-              if (activeTab === "trades") {
-                fetchTrades();
-              } else {
-                fetchOrders();
-              }
-            }}
+            onClick={() => fetchTrades()}
             style={{
               padding: "6px 12px",
               backgroundColor: "#f3f4f6",
@@ -308,7 +283,7 @@ function TradeQueryModule() {
             onMouseEnter={(e) => e.target.style.backgroundColor = "#e5e7eb"}
             onMouseLeave={(e) => e.target.style.backgroundColor = "#f3f4f6"}
           >
-            Refresh
+            Refresh Trades
           </button>
         </div>
       </div>
@@ -336,12 +311,12 @@ function TradeQueryModule() {
             fontWeight: "700",
             color: "#1f2933"
           }}>
-            {activeTab === "trades" ? `Trades (${filteredTrades.length})` : `Orders (${filteredOrders.length})`}
+            Enriched Trades ({filteredTrades.length})
           </h3>
         </div>
 
         {/* Table */}
-        {isLoading ? (
+        {loading ? (
           <div style={{
             padding: "30px",
             textAlign: "center",
@@ -350,8 +325,7 @@ function TradeQueryModule() {
           }}>
             Loading...
           </div>
-        ) : activeTab === "trades" ? (
-          filteredTrades.length === 0 ? (
+        ) : filteredTrades.length === 0 ? (
             <div style={{
               padding: "30px",
               textAlign: "center",
@@ -448,6 +422,22 @@ function TradeQueryModule() {
                           {trade.instrument_expiry_date ? new Date(trade.instrument_expiry_date).toLocaleDateString() : "-"}
                         </td>
                         <td style={{ padding: "8px 12px", textAlign: "center" }}>
+                          <button
+                            onClick={() => setSelectedTradeForAudit(trade.trade_id)}
+                            style={{
+                              padding: "4px 8px",
+                              backgroundColor: "#dbeafe",
+                              color: "#1e40af",
+                              border: "1px solid #bfdbfe",
+                              borderRadius: "3px",
+                              fontSize: "10px",
+                              fontWeight: "600",
+                              cursor: "pointer",
+                              marginRight: "4px"
+                            }}
+                          >
+                            Audit Trail
+                          </button>
                           {trade.status === "ACTIVE" && (
                             <>
                               <button
@@ -483,6 +473,23 @@ function TradeQueryModule() {
                               </button>
                             </>
                           )}
+                          {(trade.status === "CANCELLED" || trade.status === "EXPIRED") && (
+                            <button
+                              onClick={() => handleUndoTrade(trade.trade_id)}
+                              style={{
+                                padding: "4px 8px",
+                                backgroundColor: "#dcfce7",
+                                color: "#166534",
+                                border: "1px solid #bbf7d0",
+                                borderRadius: "3px",
+                                fontSize: "10px",
+                                fontWeight: "600",
+                                cursor: "pointer"
+                              }}
+                            >
+                              Undo
+                            </button>
+                          )}
                         </td>
                       </tr>
                     );
@@ -491,111 +498,16 @@ function TradeQueryModule() {
               </table>
             </div>
           )
-        ) : (
-          filteredOrders.length === 0 ? (
-            <div style={{
-              padding: "30px",
-              textAlign: "center",
-              color: "#9ca3af",
-              fontSize: "12px"
-            }}>
-              No orders found
-            </div>
-          ) : (
-            <div style={{ overflowX: "auto" }}>
-              <table style={{
-                width: "100%",
-                borderCollapse: "collapse",
-                fontSize: "11px"
-              }}>
-                <thead>
-                  <tr style={{
-                    backgroundColor: "#f9fafb",
-                    borderBottom: "1px solid #e5e7eb"
-                  }}>
-                    <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: "700", color: "#4b5563", fontSize: "10px" }}>ORDER ID</th>
-                    <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: "700", color: "#4b5563", fontSize: "10px" }}>INSTRUMENT</th>
-                    <th style={{ padding: "8px 12px", textAlign: "center", fontWeight: "700", color: "#4b5563", fontSize: "10px" }}>SIDE</th>
-                    <th style={{ padding: "8px 12px", textAlign: "right", fontWeight: "700", color: "#4b5563", fontSize: "10px" }}>QTY</th>
-                    <th style={{ padding: "8px 12px", textAlign: "right", fontWeight: "700", color: "#4b5563", fontSize: "10px" }}>PRICE</th>
-                    <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: "700", color: "#4b5563", fontSize: "10px" }}>TRADER</th>
-                    <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: "700", color: "#4b5563", fontSize: "10px" }}>ACCOUNT</th>
-                    <th style={{ padding: "8px 12px", textAlign: "left", fontWeight: "700", color: "#4b5563", fontSize: "10px" }}>PORTFOLIO</th>
-                    <th style={{ padding: "8px 12px", textAlign: "center", fontWeight: "700", color: "#4b5563", fontSize: "10px" }}>STATUS</th>
-                    <th style={{ padding: "8px 12px", textAlign: "right", fontWeight: "700", color: "#4b5563", fontSize: "10px" }}>NOTIONAL</th>
-                    <th style={{ padding: "8px 12px", textAlign: "center", fontWeight: "700", color: "#4b5563", fontSize: "10px" }}>EXPIRY</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredOrders.map((order, idx) => {
-                    const statusColor = getStatusColor(order.status);
-                    return (
-                      <tr
-                        key={idx}
-                        style={{
-                          backgroundColor: idx % 2 === 0 ? "#fff" : "#f9fafb",
-                          borderBottom: "1px solid #e5e7eb",
-                        }}
-                      >
-                        <td style={{ padding: "8px 12px", color: "#1f2933", fontWeight: "600", fontSize: "11px" }}>
-                          {String(order.order_id || "-").substring(0, 8)}
-                        </td>
-                        <td style={{ padding: "8px 12px", color: "#1f2933", fontWeight: "600", fontSize: "11px" }}>
-                          {order.instrument_symbol}
-                        </td>
-                        <td style={{
-                          padding: "8px 12px",
-                          textAlign: "center",
-                          color: order.side === "BUY" ? "#10b981" : "#ef4444",
-                          fontWeight: "600",
-                          fontSize: "11px"
-                        }}>
-                          {order.side}
-                        </td>
-                        <td style={{ padding: "8px 12px", textAlign: "right", color: "#4b5563", fontSize: "11px" }}>
-                          {order.qty?.toLocaleString()}
-                        </td>
-                        <td style={{ padding: "8px 12px", textAlign: "right", color: "#4b5563", fontSize: "11px" }}>
-                          {order.price?.toFixed(2)}
-                        </td>
-                        <td style={{ padding: "8px 12px", color: "#4b5563", fontSize: "11px" }}>
-                          {order.trader_name || order.trader_id}
-                        </td>
-                        <td style={{ padding: "8px 12px", color: "#4b5563", fontSize: "11px" }}>
-                          {order.account_code || order.account_id}
-                        </td>
-                        <td style={{ padding: "8px 12px", color: "#4b5563", fontSize: "11px" }}>
-                          {order.portfolio_name || "-"}
-                        </td>
-                        <td style={{ padding: "8px 12px", textAlign: "center" }}>
-                          <span style={{
-                            display: "inline-block",
-                            padding: "3px 8px",
-                            borderRadius: "3px",
-                            fontSize: "10px",
-                            fontWeight: "700",
-                            backgroundColor: statusColor.bg,
-                            color: statusColor.text,
-                            border: `1px solid ${statusColor.border}`
-                          }}>
-                            {order.status}
-                          </span>
-                        </td>
-                        <td style={{ padding: "8px 12px", textAlign: "right", color: "#4b5563", fontSize: "11px" }}>
-                          {order.notional_value?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </td>
-                        <td style={{ padding: "8px 12px", textAlign: "center", color: "#4b5563", fontSize: "11px" }}>
-                          {order.instrument_expiry_date ? new Date(order.instrument_expiry_date).toLocaleDateString() : "-"}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )
-        )}
+        }
       </div>
+      
+      {/* Audit Trail Modal */}
+      {selectedTradeForAudit && (
+        <TradeAuditTrailModal
+          tradeId={selectedTradeForAudit}
+          onClose={() => setSelectedTradeForAudit(null)}
+        />
+      )}
     </div>
   );
 }

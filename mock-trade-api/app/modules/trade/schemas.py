@@ -52,3 +52,18 @@ class TradeAllocationSchema(TimestampedSchema):
     price: Optional[float] = None
     status: str = "ACTIVE"
 
+class TradeAuditTrailSchema(BaseModel):
+    """Schema for trade audit trail response"""
+    audit_id: str
+    trade_id: str
+    event_type: str
+    event_description: Optional[str] = None
+    old_status: Optional[str] = None
+    new_status: Optional[str] = None
+    changed_by: Optional[str] = None
+    event_metadata: Optional[dict] = None
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+

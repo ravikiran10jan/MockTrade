@@ -11,13 +11,38 @@
   padding: 6px; /* compact */
   color: #1f2933;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+  max-height: 600px; /* Fixed height to enable vertical scrolling */
 }
 
-/* horizontal scroll wrapper */
+/* horizontal scroll wrapper with vertical scrolling */
 .order-blotter-inner {
   overflow-x: auto; /* allows horizontal scrolling */
+  overflow-y: auto; /* allows vertical scrolling */
+  flex: 1; /* take remaining space */
   /* central place to define column sizes so header and rows align */
   --blotter-columns: 140px 64px 84px 100px 84px 1fr 80px 72px;
+}
+
+/* Custom scrollbar styling for modern look */
+.order-blotter-inner::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.order-blotter-inner::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.order-blotter-inner::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.order-blotter-inner::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 /* Shared grid definition for header and rows */
@@ -29,13 +54,17 @@
   min-width: 820px; /* triggers horizontal scroll on narrow viewports */
 }
 
-/* Header styling (less bold) */
+/* Header styling (less bold) - sticky to stay visible when scrolling */
 .blotter-header {
   font-size: 10px;
   font-weight: 600;
   color: #6b7280;
   padding: 6px 4px;
   border-bottom: 1px solid #f3f4f6;
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 10;
 }
 
 /* Data rows */

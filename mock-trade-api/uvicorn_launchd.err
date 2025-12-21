@@ -6816,3 +6816,39 @@ fastapi.exceptions.HTTPException: 400: Role 'BO_USER' already exists
 2025-12-16 01:58:12,592 - app.database - DEBUG - Database session created
 2025-12-16 01:58:12,595 - app.main - INFO - RESPONSE: GET /api/v1/security/modules - Status: 200
 2025-12-16 01:58:12,597 - app.database - DEBUG - Database session closed
+2025-12-19 10:24:20,876 - app.main - INFO - REQUEST: GET /api/v1/orders/
+2025-12-19 10:24:20,927 - app.main - INFO - RESPONSE: GET /api/v1/orders/ - Status: 404
+2025-12-19 10:24:20,993 - app.main - INFO - REQUEST: GET /api/v1/orders/
+2025-12-19 10:24:20,995 - app.main - INFO - RESPONSE: GET /api/v1/orders/ - Status: 404
+2025-12-19 10:24:21,008 - app.main - INFO - REQUEST: GET /api/v1/orders/
+2025-12-19 10:24:21,010 - app.main - INFO - RESPONSE: GET /api/v1/orders/ - Status: 404
+2025-12-19 10:27:42,507 - app.main - INFO - REQUEST: GET /api/v1/orders/
+2025-12-19 10:27:42,518 - app.main - INFO - RESPONSE: GET /api/v1/orders/ - Status: 404
+2025-12-19 10:27:42,575 - app.main - INFO - REQUEST: GET /api/v1/orders/
+2025-12-19 10:27:42,577 - app.main - INFO - RESPONSE: GET /api/v1/orders/ - Status: 404
+2025-12-19 10:27:42,591 - app.main - INFO - REQUEST: GET /api/v1/orders/
+2025-12-19 10:27:42,594 - app.main - INFO - RESPONSE: GET /api/v1/orders/ - Status: 404
+2025-12-19 10:29:07,182 - app.main - INFO - REQUEST: GET /api/v1/orders/
+2025-12-19 10:29:07,188 - app.main - INFO - RESPONSE: GET /api/v1/orders/ - Status: 404
+2025-12-19 10:29:07,244 - app.main - INFO - REQUEST: GET /api/v1/orders/
+2025-12-19 10:29:07,249 - app.main - INFO - RESPONSE: GET /api/v1/orders/ - Status: 404
+2025-12-19 10:29:07,260 - app.main - INFO - REQUEST: GET /api/v1/orders/
+2025-12-19 10:29:07,262 - app.main - INFO - RESPONSE: GET /api/v1/orders/ - Status: 404
+2025-12-19 10:29:20,240 - app.main - INFO - REQUEST: GET /api/v1/orders/
+2025-12-19 10:29:20,244 - app.main - INFO - RESPONSE: GET /api/v1/orders/ - Status: 404
+2025-12-19 10:29:20,310 - app.main - INFO - REQUEST: GET /api/v1/orders/
+2025-12-19 10:29:20,312 - app.main - INFO - RESPONSE: GET /api/v1/orders/ - Status: 404
+2025-12-19 10:29:20,329 - app.main - INFO - REQUEST: GET /api/v1/orders/
+2025-12-19 10:29:20,333 - app.main - INFO - RESPONSE: GET /api/v1/orders/ - Status: 404
+2025-12-19 10:29:41,431 - app.main - INFO - REQUEST: GET /api/v1/orders/
+2025-12-19 10:29:41,444 - app.main - INFO - RESPONSE: GET /api/v1/orders/ - Status: 404
+2025-12-19 10:38:07,580 - app.main - INFO - REQUEST: GET /api/v1/orders/
+2025-12-19 10:38:07,586 - app.main - INFO - RESPONSE: GET /api/v1/orders/ - Status: 404
+2025-12-19 10:38:28,704 - app.main - INFO - REQUEST: GET /api/v1/orders
+2025-12-19 10:38:28,711 - app.main - INFO - RESPONSE: GET /api/v1/orders - Status: 404
+2025-12-19 10:39:22,790 - app.main - INFO - REQUEST: GET /api/v1/orders/
+2025-12-19 10:39:22,799 - app.main - INFO - RESPONSE: GET /api/v1/orders/ - Status: 404
+2025-12-19 10:39:22,862 - app.main - INFO - REQUEST: GET /api/v1/orders/
+2025-12-19 10:39:22,864 - app.main - INFO - RESPONSE: GET /api/v1/orders/ - Status: 404
+2025-12-19 10:39:22,878 - app.main - INFO - REQUEST: GET /api/v1/orders/
+2025-12-19 10:39:22,882 - app.main - INFO - RESPONSE: GET /api/v1/orders/ - Status: 404

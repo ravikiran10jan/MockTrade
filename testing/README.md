@@ -4,7 +4,8 @@
 BDD-style API test automation framework for MockTrade using:
 - **Cucumber** for BDD (Gherkin feature files)
 - **Rest Assured** for API testing
-- **JUnit** for test execution
+- **TestNG** for test execution and reporting
+- **JUnit** (legacy support)
 - **Maven** for build and dependency management
 
 ## Architecture
@@ -33,10 +34,12 @@ Utilities (config, data, assertions)
 ```
 testing/
 ├── pom.xml                                 # Maven configuration
+├── open-reports.sh                         # Script to open test reports
 ├── src/test/
 │   ├── java/com/mocktrade/tests/
 │   │   ├── runners/
-│   │   │   └── ApiTestRunner.java         # Cucumber runner
+│   │   │   ├── ApiTestRunner.java         # JUnit Cucumber runner
+│   │   │   └── TestNGRunner.java          # TestNG Cucumber runner
 │   │   ├── steps/
 │   │   │   └── CommonSteps.java           # Reusable step definitions
 │   │   ├── interfaces/api/
@@ -54,7 +57,8 @@ testing/
 │       │   │   └── login.feature          # Login scenarios
 │       │   └── orders/
 │       │       └── order_entry.feature    # Order entry scenarios
-│       └── config.properties              # Test configuration
+│       ├── config.properties              # Test configuration
+│       └── testng.xml                     # TestNG suite configuration
 ```
 
 ## Prerequisites
@@ -90,10 +94,36 @@ mvn clean test -Dcucumber.filter.tags=""
 
 ## Test Reports
 
-After test execution, reports are generated in:
-- **HTML Report**: `target/cucumber-reports/cucumber-html-report.html`
-- **JSON Report**: `target/cucumber-reports/cucumber.json`
-- **JUnit XML**: `target/cucumber-reports/cucumber.xml`
+After test execution, multiple reports are automatically generated:
+
+### TestNG Reports (Primary)
+- **HTML Report**: `target/surefire-reports/index.html` - Comprehensive test results with charts
+- **Emailable Report**: `target/surefire-reports/emailable-report.html` - Concise summary report
+- **XML Results**: `target/surefire-reports/testng-results.xml` - Detailed XML output
+- **Suite Report**: `target/surefire-reports/MockTrade API Test Suite/Smoke Tests.html`
+
+### Cucumber Reports
+- **HTML Report**: `target/cucumber-reports/cucumber-html-report.html` - BDD scenario view
+- **JSON Report**: `target/cucumber-reports/cucumber.json` - Machine-readable format
+- **JUnit XML**: `target/cucumber-reports/cucumber.xml` - CI/CD compatible format
+- **TestNG XML**: `target/cucumber-reports/cucumber-testng.xml` - TestNG format
+
+### Opening Reports
+
+Use the convenience script to open all reports in your browser:
+```bash
+cd testing
+./open-reports.sh
+```
+
+Or open individual reports:
+```bash
+# TestNG main report
+open target/surefire-reports/index.html
+
+# Cucumber BDD report
+open target/cucumber-reports/cucumber-html-report.html
+```
 
 ## Configuration
 
@@ -129,7 +159,9 @@ Edit `src/test/resources/config.properties` to change:
    - order_entry.feature (5 scenarios including data-driven)
 
 6. **Test Runner**
-   - ApiTestRunner configured for smoke tests
+   - ApiTestRunner (JUnit runner)
+   - TestNGRunner (TestNG runner with reporting)
+   - testng.xml suite configuration
 
 ## Example Test Execution
 
@@ -142,8 +174,10 @@ docker-compose up -d
 cd testing
 mvn clean test
 
-# View report
-open target/cucumber-reports/cucumber-html-report.html
+# View reports
+./open-reports.sh
+# OR
+open target/surefire-reports/index.html
 ```
 
 ## Adding New Tests
